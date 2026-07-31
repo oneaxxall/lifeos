@@ -20,14 +20,26 @@ interface Props {
 
 /** Brief harian AI + perintah tindakan (IN-01/02). Collapsible. */
 export function DailyBriefPanel({ refreshKey }: Props) {
-  const { data, source, loading, collapsed, setCollapsed, fetched } =
+  const { data, source, loading, collapsed, setCollapsed, fetched, stale, reload } =
     useInsightPanel<DailyBrief>("/api/insights/daily", refreshKey, false);
+
+  // Stale-while-revalidate: jika respons adalah brief lama (hari ini belum dibuat),
+  // server sedang generate di background — auto-refresh sampai dapat yang baru.
+  React.useEffect(() => {
+    if (!stale) return;
+    const timer = setInterval(() => {
+      reload();
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [stale, reload]);
 
   if (loading && !data) {
     return (
       <div className="flex items-center gap-3 rounded-xl border border-border bg-card p-4">
         <Loader2 className="size-4 animate-spin text-primary" />
-        <p className="text-sm text-muted-foreground">AI menyiapkan brief harianmu…</p>
+        <p className="text-sm text-muted-foreground">
+          {stale ? "Memperbarui brief harian…" : "AI menyiapkan brief harianmu…"}
+        </p>
       </div>
     );
   }
@@ -58,11 +70,19 @@ export function DailyBriefPanel({ refreshKey }: Props) {
                 offline
               </Badge>
             )}
+            {stale && (
+              <Badge variant="secondary" className="ml-2 align-middle text-[9px]">
+                memperbarui…
+              </Badge>
+            )}
           </p>
           <p className="truncate text-[10px] text-muted-foreground">
             {new Date().toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long" })}
           </p>
         </div>
+        {stale && (
+          <Loader2 className="size-4 shrink-0 animate-spin text-primary" />
+        )}
       </div>
 
       {/* Isi */}

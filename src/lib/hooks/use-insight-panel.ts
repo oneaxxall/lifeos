@@ -13,6 +13,8 @@ export interface InsightPanelResult<T> {
   setCollapsed: React.Dispatch<React.SetStateAction<boolean>>;
   /** true jika sudah pernah fetch (untuk membedakan "belum dibuka" vs "kosong") */
   fetched: boolean;
+  /** true jika data adalah hasil lama (stale-while-revalidate) — masih diproses */
+  stale: boolean;
   /** Muat ulang manual (tombol refresh) */
   reload: () => void;
 }
@@ -36,6 +38,7 @@ export function useInsightPanel<T>(
   const [source, setSource] = React.useState<InsightSource>(null);
   const [collapsed, setCollapsed] = React.useState(defaultCollapsed);
   const [fetched, setFetched] = React.useState(false);
+  const [stale, setStale] = React.useState(false);
   const [tick, setTick] = React.useState(0);
   // Kombinasi trigger terakhir yang sudah di-fetch (hindari refetch saat buka-tutup)
   const lastFetchRef = React.useRef<{ key: number; tick: number } | null>(null);
@@ -44,10 +47,11 @@ export function useInsightPanel<T>(
   React.useEffect(() => {
     if (collapsed) return; // panel tertutup → jangan panggil AI
     const trigger = { key: refreshKey, tick };
+    // Penanda disimpan SETELAH fetch sukses (bukan sebelum) — agar StrictMode
+    // (dev: effect jalan 2x, fetch pertama di-cancel) tetap memicu fetch ulang.
     if (lastFetchRef.current && lastFetchRef.current.key === trigger.key && lastFetchRef.current.tick === trigger.tick) {
       return; // sudah dimuat untuk trigger ini (buka-tutup tidak refetch)
     }
-    lastFetchRef.current = trigger;
     let cancelled = false;
     fetch(endpoint, { method: "POST" })
       .then((r) => r.json())
@@ -56,7 +60,9 @@ export function useInsightPanel<T>(
         if (json.ok) {
           setData(json.data ?? null);
           setSource(json.source ?? null);
+          setStale(!!json.stale);
         }
+        lastFetchRef.current = trigger; // tandai sukses — hindari refetch buka-tutup
         setFetched(true);
       })
       .catch(() => {
@@ -75,5 +81,5 @@ export function useInsightPanel<T>(
   // Fetch ulang (refreshKey/reload) tidak menampilkan spinner penuh — data lama tetap tampil.
   const loading = !collapsed && !fetched;
 
-  return { data, source, loading, collapsed, setCollapsed, fetched, reload };
+  return { data, source, loading, collapsed, setCollapsed, fetched, stale, reload };
 }

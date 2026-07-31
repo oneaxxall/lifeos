@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   checkCredentials,
   createSessionToken,
+  isHttpsRequest,
   sessionCookieHeader,
 } from "@/lib/auth";
 
@@ -27,7 +28,11 @@ export async function POST(req: NextRequest) {
   }
 
   const token = createSessionToken();
+  const secure = isHttpsRequest(
+    req.nextUrl.protocol,
+    req.headers.get("x-forwarded-proto")
+  );
   const res = NextResponse.json({ ok: true });
-  res.headers.set("Set-Cookie", sessionCookieHeader(token));
+  res.headers.set("Set-Cookie", sessionCookieHeader(token, secure));
   return res;
 }

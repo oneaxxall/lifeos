@@ -1,5 +1,6 @@
 import { generateText } from "ai";
 import { z } from "zod";
+import { and, desc, eq, gte, sql } from "drizzle-orm";
 import { getModel } from "@/lib/ai/provider";
 import { buildSystemPrompt, buildUserPrompt } from "@/lib/ai/prompt-builder";
 import { buildLifeContext } from "@/lib/ai/life-context";
@@ -47,20 +48,71 @@ export function saveInsight(input: {
     .get();
 }
 
-/** IN-01/02: Ringkasan harian + 1 perintah tindakan */
-export async function dailyBrief(): Promise<{
-  ok: boolean;
-  data: DailyBrief | null;
-  source: "ai" | "heuristik" | "kosong";
-  error?: string;
-}> {
-  const context = buildLifeContext();
-  if (!context.trim() || context.trim() === "  (belum ada data)") {
-    return { ok: true, data: null, source: "kosong" };
+/**
+ * Cari brief harian tersimpan hari ini — hindari generate ulang (1x/hari).
+ * Tangguh terhadap row lama (plain text) — coba beberapa row terakhir.
+ */
+function findStoredDailyBrief(): { data: DailyBrief; source: "ai" | "heuristik" } | null {
+  const rows = db
+    .select()
+    .from(insights)
+    .where(and(eq(insights.type, "harian"), eq(insights.date, sql`date('now')`)))
+    .orderBy(desc(insights.id))
+    .limit(5)
+    .all();
+  for (const row of rows) {
+    const parsed = parseJson(row.content, DailyBriefSchema);
+    if (parsed) {
+      return { data: parsed, source: row.source === "heuristik" ? "heuristik" : "ai" };
+    }
   }
+  return null;
+}
 
+/**
+ * Cari laporan mingguan tersimpan (7 hari terakhir) — hindari generate ulang (1x/minggu).
+ */
+function findStoredWeeklyReport(): { data: WeeklyReport; source: "ai" | "heuristik" } | null {
+  const row = db
+    .select()
+    .from(insights)
+    .where(and(eq(insights.type, "mingguan"), gte(insights.date, sql`date('now','-6 days')`)))
+    .orderBy(desc(insights.id))
+    .limit(1)
+    .get();
+  if (!row) return null;
+  const parsed = parseJson(row.content, WeeklyReportSchema);
+  if (!parsed) return null;
+  return { data: parsed, source: row.source === "heuristik" ? "heuristik" : "ai" };
+}
+
+/**
+ * Cari brief harian terakhir (hari apa pun) — untuk tampilan instan
+ * saat brief hari ini belum dibuat (stale-while-revalidate).
+ */
+function findLastDailyBrief(): { data: DailyBrief; source: "ai" | "heuristik" } | null {
+  const rows = db
+    .select()
+    .from(insights)
+    .where(eq(insights.type, "harian"))
+    .orderBy(desc(insights.id))
+    .limit(5)
+    .all();
+  for (const row of rows) {
+    const parsed = parseJson(row.content, DailyBriefSchema);
+    if (parsed) {
+      return { data: parsed, source: row.source === "heuristik" ? "heuristik" : "ai" };
+    }
+  }
+  return null;
+}
+
+/** Generate brief harian (LLM/heuristik) + simpan ke DB. */
+async function generateDailyBrief(context: string): Promise<{
+  data: DailyBrief;
+  source: "ai" | "heuristik";
+}> {
   const heuristik = buildDailyHeuristic(context);
-
   try {
     const model = getModel();
     const system = buildSystemPrompt({ tone: "detail" });
@@ -72,24 +124,58 @@ export async function dailyBrief(): Promise<{
         "Bahasa Indonesia, langsung, tanpa basa-basi.",
       context
     );
-
     const { text } = await generateText({ model, system, prompt: user, temperature: 0.4 });
     const parsed = parseJson(text, DailyBriefSchema);
     if (parsed) {
-      saveInsight({ type: "harian", title: "Brief harian", content: parsed.ringkasan });
-      return { ok: true, data: parsed, source: "ai" };
+      saveInsight({ type: "harian", title: "Brief harian", content: JSON.stringify(parsed), source: "ai" });
+      return { data: parsed, source: "ai" };
     }
-    saveInsight({ type: "harian", title: "Brief harian", content: heuristik.ringkasan });
-    return { ok: true, data: heuristik, source: "heuristik" };
+    saveInsight({ type: "harian", title: "Brief harian", content: JSON.stringify(heuristik), source: "heuristik" });
+    return { data: heuristik, source: "heuristik" };
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     if (msg.includes("AI_API_KEY")) {
-      saveInsight({ type: "harian", title: "Brief harian", content: heuristik.ringkasan });
-      return { ok: true, data: heuristik, source: "heuristik" };
+      saveInsight({ type: "harian", title: "Brief harian", content: JSON.stringify(heuristik), source: "heuristik" });
+      return { data: heuristik, source: "heuristik" };
     }
     console.error("AI daily brief error:", err);
-    return { ok: true, data: heuristik, source: "heuristik" };
+    return { data: heuristik, source: "heuristik" };
   }
+}
+
+/** IN-01/02: Ringkasan harian + 1 perintah tindakan */
+export async function dailyBrief(): Promise<{
+  ok: boolean;
+  data: DailyBrief | null;
+  source: "ai" | "heuristik" | "kosong";
+  /** true jika data berasal dari brief KEMARIN (hari ini belum dibuat) */
+  stale?: boolean;
+  error?: string;
+}> {
+  // Sudah dibuat hari ini? Langsung pakai yang tersimpan — HEMAT LLM (1x/hari)
+  const stored = findStoredDailyBrief();
+  if (stored) {
+    return { ok: true, data: stored.data, source: stored.source };
+  }
+
+  // Belum dibuat hari ini: tampilkan brief terakhir (instan) + generate di background
+  const last = findLastDailyBrief();
+  if (last) {
+    const context = buildLifeContext();
+    if (context.trim() && context.trim() !== "  (belum ada data)") {
+      // Generate untuk hari ini TANPA memblokir response (fire-and-forget)
+      void generateDailyBrief(context).catch(() => {});
+    }
+    return { ok: true, data: last.data, source: last.source, stale: true };
+  }
+
+  // Belum pernah ada brief: generate langsung (bisa lambat pertama kali)
+  const context = buildLifeContext();
+  if (!context.trim() || context.trim() === "  (belum ada data)") {
+    return { ok: true, data: null, source: "kosong" };
+  }
+  const fresh = await generateDailyBrief(context);
+  return { ok: true, data: fresh.data, source: fresh.source };
 }
 
 /** IN-04/05: Laporan mingguan + korelasi lintas fitur */
@@ -99,6 +185,12 @@ export async function weeklyReport(): Promise<{
   source: "ai" | "heuristik" | "kosong";
   error?: string;
 }> {
+  // Sudah dibuat minggu ini? Langsung pakai yang tersimpan — HEMAT LLM (1x/minggu)
+  const stored = findStoredWeeklyReport();
+  if (stored) {
+    return { ok: true, data: stored.data, source: stored.source };
+  }
+
   const context = buildLifeContext();
   if (!context.trim()) {
     return { ok: true, data: null, source: "kosong" };
@@ -122,15 +214,15 @@ export async function weeklyReport(): Promise<{
     const { text } = await generateText({ model, system, prompt: user, temperature: 0.4 });
     const parsed = parseJson(text, WeeklyReportSchema);
     if (parsed) {
-      saveInsight({ type: "mingguan", title: "Laporan mingguan", content: parsed.ringkasan });
+      saveInsight({ type: "mingguan", title: "Laporan mingguan", content: JSON.stringify(parsed), source: "ai" });
       return { ok: true, data: parsed, source: "ai" };
     }
-    saveInsight({ type: "mingguan", title: "Laporan mingguan", content: heuristik.ringkasan });
+    saveInsight({ type: "mingguan", title: "Laporan mingguan", content: JSON.stringify(heuristik), source: "heuristik" });
     return { ok: true, data: heuristik, source: "heuristik" };
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     if (msg.includes("AI_API_KEY")) {
-      saveInsight({ type: "mingguan", title: "Laporan mingguan", content: heuristik.ringkasan });
+      saveInsight({ type: "mingguan", title: "Laporan mingguan", content: JSON.stringify(heuristik), source: "heuristik" });
       return { ok: true, data: heuristik, source: "heuristik" };
     }
     console.error("AI weekly report error:", err);

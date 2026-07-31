@@ -91,9 +91,13 @@ export function isValidSession(token: string | undefined): boolean {
   return verify(token) !== null;
 }
 
-/** Header Set-Cookie untuk session (httpOnly, sameSite, secure di prod). */
-export function sessionCookieHeader(token: string): string {
-  const isProd = process.env.NODE_ENV === "production";
+/**
+ * Header Set-Cookie untuk session (httpOnly, sameSite).
+ * Atribut Secure HANYA jika koneksi benar-benar HTTPS — kalau dipaksa di HTTP,
+ * browser menolak cookie → login "sukses" tapi tidak pernah redirect.
+ * @param isSecureDetected true jika req.nextUrl.protocol === "https:" atau header x-forwarded-proto = https
+ */
+export function sessionCookieHeader(token: string, isSecureDetected: boolean): string {
   const parts = [
     `${SESSION_COOKIE}=${token}`,
     "Path=/",
@@ -101,11 +105,30 @@ export function sessionCookieHeader(token: string): string {
     "SameSite=Lax",
     `Max-Age=${SESSION_TTL_MS / 1000}`,
   ];
-  if (isProd) parts.push("Secure");
+  if (isSecureDetected) parts.push("Secure");
   return parts.join("; ");
 }
 
 /** Header untuk menghapus cookie (logout). */
-export function clearSessionCookieHeader(): string {
-  return `${SESSION_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`;
+export function clearSessionCookieHeader(isSecureDetected: boolean): string {
+  const parts = [
+    `${SESSION_COOKIE}=`,
+    "Path=/",
+    "HttpOnly",
+    "SameSite=Lax",
+    "Max-Age=0",
+  ];
+  if (isSecureDetected) parts.push("Secure");
+  return parts.join("; ");
+}
+
+/**
+ * Deteksi HTTPS dari request — mempertimbangkan reverse proxy (x-forwarded-proto).
+ */
+export function isHttpsRequest(
+  protocol: string | undefined,
+  forwardedProto: string | null
+): boolean {
+  if (forwardedProto === "https") return true;
+  return protocol === "https:";
 }
