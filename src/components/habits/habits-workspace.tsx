@@ -1,7 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { CalendarCheck2, Flame, Loader2, Sparkles } from "lucide-react";
+import { CalendarCheck2, Flame, Loader2, Search, Sparkles } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { HabitForm } from "@/components/habits/habit-form";
 import { HabitCard, type HabitItem, type HabitStatsData } from "@/components/habits/habit-card";
 
@@ -9,11 +10,21 @@ interface HabitWithStats extends HabitItem {
   stats: HabitStatsData;
 }
 
+const CATEGORY_FILTERS = [
+  { value: "", label: "Semua" },
+  { value: "digital", label: "Digital" },
+  { value: "konsumsi", label: "Konsumsi" },
+  { value: "fisik", label: "Fisik" },
+  { value: "lainnya", label: "Lainnya" },
+];
+
 /** Workspace Bad Habit Tracker — ringkasan + daftar kebiasaan + check-in + panel AI. */
 export function HabitsWorkspace() {
   const [habits, setHabits] = React.useState<HabitWithStats[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [refreshKey, setRefreshKey] = React.useState(0);
+  const [query, setQuery] = React.useState("");
+  const [category, setCategory] = React.useState("");
 
   React.useEffect(() => {
     let cancelled = false;
@@ -46,6 +57,15 @@ export function HabitsWorkspace() {
   }, [refreshKey]);
 
   const handleChanged = () => setRefreshKey((k) => k + 1);
+
+  // Filter pencarian: nama/target/alasan + kategori
+  const q = query.trim().toLowerCase();
+  const filtered = habits.filter((h) => {
+    const matchCategory = category === "" || h.category === category;
+    if (!q) return matchCategory;
+    const haystack = [h.name, h.targetText ?? "", h.alasan ?? ""].join(" ").toLowerCase();
+    return matchCategory && haystack.includes(q);
+  });
 
   const totalBersihHariIni = habits.filter((h) => h.todayLog?.status === "bersih").length;
   const totalKambuhHariIni = habits.filter((h) => h.todayLog?.status === "kambuh").length;
@@ -127,6 +147,32 @@ export function HabitsWorkspace() {
 
         {/* Daftar kebiasaan — 2 kolom */}
         <div>
+          {/* Filter pencarian + kategori */}
+          <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center">
+            <div className="relative flex-1">
+              <Search className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Cari kebiasaan… (nama, target, alasan)"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                className="h-9 pl-8 text-sm"
+                aria-label="Cari kebiasaan"
+              />
+            </div>
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="h-9 rounded-md border border-input bg-background px-3 text-sm text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              aria-label="Filter kategori"
+            >
+              {CATEGORY_FILTERS.map((c) => (
+                <option key={c.value} value={c.value}>
+                  {c.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
           {loading ? (
             <div className="flex items-center gap-3 rounded-xl border border-border bg-card p-4">
               <Loader2 className="size-4 animate-spin text-primary" />
@@ -144,9 +190,17 @@ export function HabitsWorkspace() {
                 <Flame className="size-3" /> Mulai dari kiri — form daftar kebiasaan
               </p>
             </div>
+          ) : filtered.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-border bg-card/50 p-10 text-center">
+              <p className="text-3xl">🔍</p>
+              <p className="mt-2 text-sm font-medium">Tidak ada hasil untuk pencarian</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Coba kata kunci lain atau hapus filter kategori.
+              </p>
+            </div>
           ) : (
             <div className="grid gap-3 md:grid-cols-2">
-              {habits.map((h) => (
+              {filtered.map((h) => (
                 <HabitCard key={h.id} habit={h} stats={h.stats} onChanged={handleChanged} refreshKey={refreshKey} />
               ))}
             </div>

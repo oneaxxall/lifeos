@@ -265,18 +265,50 @@ export function HabitCard({ habit, stats, onChanged, refreshKey }: Props) {
               <span className="ml-auto text-[9px] text-muted-foreground">{analyzedDate}</span>
             )}
           </div>
+
+          {/* Pesan penyemangat */}
           {storedAdvice.pesan && (
-            <p className="mt-1.5 text-xs leading-relaxed">{storedAdvice.pesan}</p>
+            <p className="mt-1.5 text-xs leading-relaxed font-medium">{storedAdvice.pesan}</p>
           )}
+
+          {/* Pola pemicu */}
+          {storedAdvice.pemicu.length > 0 && (
+            <div className="mt-2.5 space-y-1.5">
+              <p className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-destructive">
+                <Radar className="size-3" /> Pola pemicu
+              </p>
+              {storedAdvice.pemicu.map((p, i) => (
+                <div key={i} className="text-[11px] leading-relaxed">
+                  <p className="font-medium">{p.pola}</p>
+                  <p className="text-muted-foreground">
+                    {p.konteks} <span className="text-foreground">{p.saran}</span>
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Saran pengganti */}
+          {storedAdvice.pengganti.length > 0 && (
+            <div className="mt-2.5 space-y-1">
+              <p className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-primary">
+                <Lightbulb className="size-3" /> Saran pengganti
+              </p>
+              {storedAdvice.pengganti.map((g, i) => (
+                <p key={i} className="flex items-start gap-1.5 text-[11px] leading-relaxed text-muted-foreground">
+                  <span className="mt-0.5 shrink-0 text-primary/70">✨</span>
+                  <span>
+                    <span className="font-medium text-foreground">{g.pemicu}:</span> {g.gantiDengan}
+                  </span>
+                </p>
+              ))}
+            </div>
+          )}
+
+          {/* Refleksi */}
           {storedAdvice.refleksi && (
-            <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+            <p className="mt-2.5 rounded-md bg-background/50 px-2 py-1.5 text-[11px] leading-relaxed text-muted-foreground">
               {storedAdvice.refleksi}
-            </p>
-          )}
-          {storedAdvice.pengganti[0] && (
-            <p className="mt-1.5 flex items-start gap-1.5 text-[11px] leading-relaxed text-muted-foreground">
-              <Lightbulb className="mt-0.5 size-3 shrink-0 text-primary/70" />
-              <span>{storedAdvice.pengganti[0].gantiDengan}</span>
             </p>
           )}
         </div>
