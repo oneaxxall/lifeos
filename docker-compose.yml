@@ -1,0 +1,47 @@
+# ══════════════════════════════════════════════════════════
+# LifeOS — docker-compose (app + volume persisten)
+#
+# App berjalan di port 6002 (default).
+# Reverse proxy ke domain terserah Anda:
+#   - Nginx Proxy Manager (NPM)
+#   - Caddy / Nginx / Traefik
+#   - Cloudflare Tunnel, dll.
+#
+# Cara pakai:
+#   1. Salin Dockerfile + docker-compose.yml ke VPS
+#   2. Buat .env (lihat bagian environment di bawah) — atau jalankan ./install.sh
+#   3. docker compose up -d --build
+#   4. Akses http://IP_SERVER:6002
+# ══════════════════════════════════════════════════════════
+
+services:
+  app:
+    build: .
+    container_name: lifeos-app
+    restart: unless-stopped
+    environment:
+      # ── Auth login (WAJIB ganti) ──
+      AUTH_USERNAME: ${AUTH_USERNAME:-admin}
+      AUTH_PASSWORD: ${AUTH_PASSWORD:-ganti-password-ini}
+      AUTH_SECRET: ${AUTH_SECRET:-ganti-secret-min-16-karakter}
+      # ── AI (opsional; tanpa ini = mode heuristik/offline) ──
+      AI_PROVIDER: ${AI_PROVIDER:-openai}
+      AI_BASE_URL: ${AI_BASE_URL:-}
+      AI_API_KEY: ${AI_API_KEY:-}
+      AI_MODEL: ${AI_MODEL:-deepseek-v4-flash}
+    ports:
+      # Port default LifeOS: 6002 → 3000 (container)
+      # Ubah "6002" jika ingin port lain (mis. "8080:3000")
+      - "6002:3000"
+    volumes:
+      # SQLite + backup tersimpan di volume — AMAN saat container rebuild
+      - lifeos-data:/app/data
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/login').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+volumes:
+  lifeos-data:

@@ -97,6 +97,64 @@ npm run build && npm start
 
 ---
 
+## 🚀 Deploy ke VPS (Linux)
+
+LifeOS siap diinstall di VPS mana pun (Ubuntu, Debian, Fedora, CentOS, Rocky, Arch, Alpine, openSUSE, dll.) dengan **satu perintah** — `install.sh` menangani semuanya otomatis: deteksi distro → install Docker + Compose → konfigurasi kredensial → build & jalankan.
+
+### Cara 1 — Installer otomatis (disarankan)
+
+```bash
+# Langsung dari internet (tanpa clone):
+curl -fsSL https://raw.githubusercontent.com/oneaxxall/lifeos/main/install.sh | bash
+
+# Atau dari repo yang sudah di-clone:
+./install.sh
+```
+
+Installer akan menanyakan:
+- **Username & password admin** (login LifeOS)
+- **API key AI** (opsional — kosongkan untuk mode offline)
+- **Port aplikasi** (default: `6002`)
+
+Selesai — LifeOS berjalan di **`http://<IP_SERVER>:6002`** dengan migrasi database otomatis.
+
+### Cara 2 — Manual (Docker)
+
+```bash
+# 1. Install Docker + Compose (sesuai distro), lalu:
+mkdir -p ~/lifeos && cd ~/lifeos
+
+# 2. Upload file: Dockerfile, docker-compose.yml, .env.example
+# 3. Buat environment:
+cp .env.example .env && nano .env   # isi AUTH_USERNAME/PASSWORD/SECRET
+
+# 4. Build & jalankan:
+docker compose up -d --build
+```
+
+### 🌐 Akses via domain (reverse proxy)
+
+LifeOS **tidak mengikat port 80/443** — aplikasi berjalan di port `6002` (atau port yang Anda pilih). Untuk domain + HTTPS, arahkan reverse proxy apa pun ke port tersebut:
+
+| Reverse proxy | Konfigurasi |
+|---------------|-------------|
+| **Nginx Proxy Manager** | Proxy Host → `http://localhost:6002` (pilih SSL cert) |
+| **Nginx** | `proxy_pass http://127.0.0.1:6002;` |
+| **Caddy** | `reverse_proxy 127.0.0.1:6002` |
+| **Cloudflare Tunnel** | Service URL → `http://localhost:6002` |
+
+### 🔄 Update aplikasi di VPS
+
+```bash
+cd ~/lifeos
+git pull                       # jika clone dari repo
+docker compose up -d --build   # rebuild image baru
+```
+
+> 💾 **Data aman**: SQLite tersimpan di Docker volume (`lifeos-data`) — tidak terhapus saat rebuild. Backup via halaman `/backup` di LifeOS.
+
+---
+
 ## 🔐 Login (berbasis .env, tanpa database)
 
 LifeOS diproteksi halaman login sederhana — kredensial disimpan di `.env.local`, bukan di database:
@@ -154,6 +212,10 @@ smt-lifeos/
 │   └── sw.js                   # Service worker
 ├── data/                       # ❗ LOKAL: lifeos.db + backups (gitignored)
 ├── docs/ planning/ todos/      # ❗ LOKAL: dokumentasi & catatan (gitignored)
+├── Dockerfile                  # Build image (multi-stage, untuk VPS)
+├── docker-compose.yml          # Orkestrasi app + volume persisten (port 6002)
+├── install.sh                  # Installer otomatis untuk semua distro Linux
+├── .env.example                # Template environment (VPS)
 └── push.sh                     # Commit + push sekali jalan
 ```
 
