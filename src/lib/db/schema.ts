@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { integer, primaryKey, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 /* ═══════════ Knowledge (Second Brain) ═══════════ */
 
@@ -7,8 +7,6 @@ export const knowledge = sqliteTable("knowledge", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   title: text("title").notNull(),
   content: text("content").notNull().default(""),
-  category: text("category").notNull().default("umum"),
-  tags: text("tags").notNull().default(""), // comma-separated
   source: text("source").default(""),
   summary: text("summary").default(""), // diisi AI
   createdAt: text("created_at")
@@ -19,7 +17,46 @@ export const knowledge = sqliteTable("knowledge", {
     .default(sql`(datetime('now'))`),
 });
 
-/* ═══════════ Todo ═══════════ */
+/* ═══════════ Categories & Tags (many-to-many) ═══════════ */
+
+export const categories = sqliteTable("categories", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  name: text("name").notNull().unique(),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+});
+
+export const tags = sqliteTable("tags", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  name: text("name").notNull().unique(),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+});
+
+export const knowledgeCategories = sqliteTable("knowledge_categories", {
+  knowledgeId: integer("knowledge_id")
+    .notNull()
+    .references(() => knowledge.id, { onDelete: "cascade" }),
+  categoryId: integer("category_id")
+    .notNull()
+    .references(() => categories.id, { onDelete: "cascade" }),
+}, (t) => [primaryKey({ columns: [t.knowledgeId, t.categoryId] })]);
+
+export const knowledgeTags = sqliteTable("knowledge_tags", {
+  knowledgeId: integer("knowledge_id")
+    .notNull()
+    .references(() => knowledge.id, { onDelete: "cascade" }),
+  tagId: integer("tag_id")
+    .notNull()
+    .references(() => tags.id, { onDelete: "cascade" }),
+}, (t) => [primaryKey({ columns: [t.knowledgeId, t.tagId] })]);
+
+/* ═══════════ Todo (Kanban) ═══════════ */
+
+export const todoStatuses = ["backlog", "todo", "in_progress", "done"] as const;
+export type TodoStatus = (typeof todoStatuses)[number];
 
 export const todos = sqliteTable("todos", {
   id: integer("id").primaryKey({ autoIncrement: true }),
@@ -30,14 +67,211 @@ export const todos = sqliteTable("todos", {
     .default("sedang"),
   dueDate: text("due_date").default(""), // ISO date
   estimateMinutes: integer("estimate_minutes").default(0),
-  status: text("status", { enum: ["belum", "selesai", "tertunda"] })
+  status: text("status", { enum: todoStatuses })
     .notNull()
-    .default("belum"),
+    .default("backlog"),
+  /** Urutan dalam kolom kanban (drag & drop) */
+  position: integer("position").notNull().default(0),
+  /** Tugas induk (sub-langkah dari breakdown AI, TDO-06).
+   *  FK ke todos.id ditambahkan manual di migrasi (self-reference). */
+  parentId: integer("parent_id"),
   area: text("area").default(""), // kerja, keluarga, kesehatan, dll.
   createdAt: text("created_at")
     .notNull()
     .default(sql`(datetime('now'))`),
   completedAt: text("completed_at").default(""),
+});
+
+/* ═══════════ Finance (Transaksi & Kategori) ═══════════ */
+
+export const financeCategories = sqliteTable("finance_categories", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  name: text("name").notNull().unique(),
+  /** Jenis kategori: pemasukan | pengeluaran */
+  type: text("type", { enum: ["masuk", "keluar"] }).notNull().default("keluar"),
+  icon: text("icon").default(""), // nama ikon lucide (opsional)
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+});
+
+export const financeTransactions = sqliteTable("finance_transactions", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  /** Nominal dalam Rupiah (selalu positif; arah ditentukan `type`) */
+  amount: integer("amount").notNull(),
+  type: text("type", { enum: ["masuk", "keluar"] }).notNull().default("keluar"),
+  description: text("description").default(""),
+  categoryId: integer("category_id").references(() => financeCategories.id, {
+    onDelete: "set null",
+  }),
+  /** Tanggal transaksi (ISO date) — default hari ini */
+  date: text("date").notNull().default(sql`(date('now'))`),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+});
+
+/* ═══════════ Finance: Subscription & Budget ═══════════ */
+
+export const subscriptions = sqliteTable("subscriptions", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  name: text("name").notNull(),
+  /** Biaya per siklus (Rp) */
+  amount: integer("amount").notNull(),
+  /** Siklus tagihan: bulanan | tahunan */
+  cycle: text("cycle", { enum: ["bulanan", "tahunan"] }).notNull().default("bulanan"),
+  /** Tanggal tagihan berikutnya (ISO date) */
+  nextBillingDate: text("next_billing_date").default(""),
+  active: integer("active", { mode: "boolean" }).notNull().default(true),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+});
+
+export const budgets = sqliteTable("budgets", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  categoryId: integer("category_id")
+    .notNull()
+    .references(() => financeCategories.id, { onDelete: "cascade" }),
+  /** Batas pengeluaran bulanan (Rp) */
+  limitAmount: integer("limit_amount").notNull(),
+  /** Periode budget: YYYY-MM (kosong = berlaku setiap bulan) */
+  period: text("period").default(""),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+});
+
+/* ═══════════ Time Management ═══════════ */
+
+export const activityCategories = sqliteTable("activity_categories", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  name: text("name").notNull().unique(),
+  /** Nilai aktivitas: produktif | netral | buang */
+  value: text("value", { enum: ["produktif", "netral", "buang"] })
+    .notNull()
+    .default("netral"),
+  /** Warna aksen (hex) untuk chart/timeline */
+  color: text("color").default("#0D9488"),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+});
+
+export const activities = sqliteTable("activities", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  name: text("name").notNull(),
+  categoryId: integer("category_id").references(() => activityCategories.id, {
+    onDelete: "set null",
+  }),
+  /** Waktu mulai (ISO datetime) */
+  startedAt: text("started_at").notNull(),
+  /** Waktu selesai (ISO datetime) — null = masih berjalan */
+  endedAt: text("ended_at").default(""),
+  /** Durasi dalam menit (dihitung saat stop / dihitung manual) */
+  durationMinutes: integer("duration_minutes").default(0),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+});
+
+export const timeBlocks = sqliteTable("time_blocks", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  title: text("title").notNull(),
+  categoryId: integer("category_id").references(() => activityCategories.id, {
+    onDelete: "set null",
+  }),
+  /** Hari blok (YYYY-MM-DD) */
+  day: text("day").notNull(),
+  /** Jam mulai (HH:MM) */
+  startTime: text("start_time").notNull(),
+  /** Jam selesai (HH:MM) */
+  endTime: text("end_time").notNull(),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+});
+
+/* ═══════════ Health ═══════════ */
+
+export const healthEntries = sqliteTable("health_entries", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  /** Tanggal entri (ISO date) — unik per hari */
+  date: text("date").notNull().unique(),
+  weightKg: integer("weight_kg").default(0),
+  /** Tidur dalam jam (mis. 7.5) */
+  sleepHours: integer("sleep_hours").default(0),
+  /** Olahraga dalam menit */
+  exerciseMinutes: integer("exercise_minutes").default(0),
+  /** Jumlah langkah */
+  steps: integer("steps").default(0),
+  /** Gelas air */
+  waterGlasses: integer("water_glasses").default(0),
+  notes: text("notes").default(""),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+});
+
+export const healthGoals = sqliteTable("health_goals", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  /** Berat target (kg) */
+  goalWeightKg: integer("goal_weight_kg").default(0),
+  /** Target olahraga per minggu (menit) */
+  exercisePerWeekMinutes: integer("exercise_per_week_minutes").default(0),
+  /** Target tidur per malam (jam) */
+  sleepTargetHours: integer("sleep_target_hours").default(0),
+  /** Target langkah per hari */
+  dailyStepsTarget: integer("daily_steps_target").default(0),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+});
+
+/* ═══════════ Mental Health ═══════════ */
+
+export const moodEntries = sqliteTable("mood_entries", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  /** Tanggal mood (ISO date) — unik per hari */
+  date: text("date").notNull().unique(),
+  /** Mood 1-5 (1=sangat buruk … 5=sangat baik) */
+  mood: integer("mood").notNull(),
+  /** Catatan singkat (opsional) */
+  note: text("note").default(""),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+});
+
+export const journalEntries = sqliteTable("journal_entries", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  date: text("date").notNull().default(sql`(date('now'))`),
+  content: text("content").notNull(),
+  /** Prompt refleksi yang dipakai (untuk konteks) */
+  prompt: text("prompt").default(""),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+});
+
+/* ═══════════ Sick (Catatan tidak enak badan) ═══════════ */
+
+export const sickEntries = sqliteTable("sick_entries", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  /** Gejala yang dirasakan (teks bebas) */
+  symptoms: text("symptoms").notNull(),
+  /** Durasi sudah merasa begini (mis. "2 hari") */
+  duration: text("duration").default(""),
+  /** Catatan tambahan (opsional) */
+  notes: text("notes").default(""),
+  /** Hasil analisa AI (teks) */
+  aiAdvice: text("ai_advice").default(""),
+  /** Saran AI: butuh profesional? */
+  needsProfessional: integer("needs_professional", { mode: "boolean" }).notNull().default(false),
+  date: text("date").notNull().default(sql`(date('now'))`),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
 });
 
 /* ═══════════ Insight Feedback (AI belajar) ═══════════ */
@@ -73,3 +307,17 @@ export const embeddings = sqliteTable("embeddings", {
 export type Knowledge = typeof knowledge.$inferSelect;
 export type Todo = typeof todos.$inferSelect;
 export type Embedding = typeof embeddings.$inferSelect;
+export type Category = typeof categories.$inferSelect;
+export type Tag = typeof tags.$inferSelect;
+export type FinanceCategory = typeof financeCategories.$inferSelect;
+export type FinanceTransaction = typeof financeTransactions.$inferSelect;
+export type Subscription = typeof subscriptions.$inferSelect;
+export type Budget = typeof budgets.$inferSelect;
+export type ActivityCategory = typeof activityCategories.$inferSelect;
+export type Activity = typeof activities.$inferSelect;
+export type TimeBlock = typeof timeBlocks.$inferSelect;
+export type HealthEntry = typeof healthEntries.$inferSelect;
+export type HealthGoal = typeof healthGoals.$inferSelect;
+export type MoodEntry = typeof moodEntries.$inferSelect;
+export type JournalEntry = typeof journalEntries.$inferSelect;
+export type SickEntry = typeof sickEntries.$inferSelect;

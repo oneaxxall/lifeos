@@ -11,11 +11,11 @@ export function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="hidden md:flex w-60 shrink-0 flex-col border-r border-border bg-sidebar text-sidebar-foreground">
-      {/* Logo */}
+    <aside className="hidden h-full w-60 shrink-0 flex-col border-r border-border bg-sidebar text-sidebar-foreground md:flex">
+      {/* Logo — tinggi sama dengan header (h-16), border bottom sejajar */}
       <Link
         href="/"
-        className="flex items-center gap-2 px-5 py-4 font-semibold"
+        className="flex h-16 shrink-0 items-center gap-2 border-b border-border px-5 font-semibold"
       >
         <Sparkles className="size-5 text-primary" />
         <span className="text-lg tracking-tight">LifeOS</span>
@@ -24,8 +24,8 @@ export function Sidebar() {
       {/* Navigasi */}
       <nav className="flex-1 overflow-y-auto px-3 pb-4">
         {navGroups.map((group) => (
-          <div key={group.label} className="mt-4 first:mt-0">
-            <p className="px-3 mb-1 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+          <div key={group.label} className="mt-5">
+            <p className="px-3 mb-1.5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
               {group.label}
             </p>
             <ul className="space-y-0.5">

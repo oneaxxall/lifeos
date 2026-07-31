@@ -4,12 +4,12 @@ import {
   CheckSquare,
   Clock,
   Handshake,
-  Heart,
   HeartPulse,
   Home,
   Library,
   Moon,
   Sparkles,
+  Stethoscope,
   Users,
   UsersRound,
   Wallet,
@@ -46,6 +46,7 @@ export const navGroups: NavGroup[] = [
     items: [
       { title: "Health", href: "/health", icon: HeartPulse, description: "Kesehatan fisik" },
       { title: "Mental", href: "/mental", icon: Brain, description: "Kesehatan mental" },
+      { title: "Sick", href: "/sick", icon: Stethoscope, description: "Catatan tidak enak badan" },
     ],
   },
   {

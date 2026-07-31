@@ -40,7 +40,7 @@ let cachedModel: LanguageModel | null = null;
 export function getModel(): LanguageModel {
   if (cachedModel) return cachedModel;
 
-  const { provider, apiKey, model, baseURL } = getEnv();
+  const { apiKey, model, baseURL } = getEnv();
 
   if (!apiKey) {
     throw new Error(

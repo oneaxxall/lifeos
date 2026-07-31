@@ -8,6 +8,69 @@
       "when": 1785489381902,
       "tag": "0000_init",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1785492953679,
+      "tag": "0001_categories-tags",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1785495375904,
+      "tag": "0002_todos-kanban",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1785496733024,
+      "tag": "0003_todo-parent",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1785497471496,
+      "tag": "0004_finance",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1785497912808,
+      "tag": "0005_finance-subs-budget",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1785498716311,
+      "tag": "0006_time-management",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1785499354101,
+      "tag": "0007_health",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1785499824602,
+      "tag": "0008_mental-health",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1785500508460,
+      "tag": "0009_sick-entries",
+      "breakpoints": true
     }
   ]
 }

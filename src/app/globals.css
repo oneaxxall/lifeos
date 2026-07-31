@@ -153,3 +153,81 @@
     @apply font-serif;
   }
 }
+
+/* ═══════════ Quill RichTextEditor — styling seamless ═══════════ */
+
+/* Container utama: jangan pernah melebar melebihi wrapper */
+.rich-text-editor {
+  @apply w-full min-w-0;
+}
+.rich-text-editor .ql-toolbar.ql-snow {
+  @apply rounded-t-lg border-border bg-muted/40;
+  border-bottom: 1px solid var(--border);
+}
+.rich-text-editor .ql-container.ql-snow {
+  @apply min-w-0 rounded-b-lg border-border bg-background;
+  height: var(--rte-height, 240px); /* tinggi default konsisten */
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+/* Word-wrap ke bawah — perbaikan utama: cegah melebar ke kanan */
+.rich-text-editor .ql-editor {
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+  word-break: break-word;
+  min-height: inherit;
+  max-width: 100%;
+  /* Scroll internal — konten panjang tidak melebarkan layout */
+  height: 100%;
+  overflow-y: auto;
+}
+.rich-text-editor .ql-editor p,
+.rich-text-editor .ql-editor h1,
+.rich-text-editor .ql-editor h2,
+.rich-text-editor .ql-editor h3,
+.rich-text-editor .ql-editor ol,
+.rich-text-editor .ql-editor ul,
+.rich-text-editor .ql-editor blockquote,
+.rich-text-editor .ql-editor pre {
+  max-width: 100%;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+}
+/* Placeholder */
+.rich-text-editor .ql-editor.ql-blank::before {
+  @apply text-muted-foreground/70;
+  font-style: normal;
+}
+/* Focus ring konsisten dengan input shadcn */
+.rich-text-editor:focus-within .ql-container.ql-snow {
+  @apply border-ring;
+  box-shadow: 0 0 0 1px var(--ring);
+}
+/* Mode read-only / preview */
+.rich-text-editor-readonly .ql-container.ql-snow {
+  @apply border-0 bg-transparent;
+}
+.rich-text-editor-readonly .ql-editor {
+  @apply p-0;
+}
+/* Preview content (QuillContent) di luar editor */
+.ql-editor {
+  font-size: 0.875rem;
+  line-height: 1.7;
+}
+.ql-editor p,
+.ql-editor h1,
+.ql-editor h2,
+.ql-editor h3,
+.ql-editor ul,
+.ql-editor ol {
+  @apply mb-2;
+}
+.ql-editor ul,
+.ql-editor ol {
+  @apply pl-5;
+}
+.ql-editor blockquote {
+  @apply border-l-2 border-primary/40 pl-3 italic text-muted-foreground;
+}

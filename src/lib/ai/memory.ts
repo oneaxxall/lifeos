@@ -1,4 +1,4 @@
-import { embed, embedMany } from "ai";
+import { embed } from "ai";
 import { createOpenAI } from "@ai-sdk/openai";
 import { db } from "@/lib/db";
 import { embeddings } from "@/lib/db/schema";
@@ -14,7 +14,6 @@ import { and, eq } from "drizzle-orm";
  */
 
 const EMBED_MODEL = process.env.AI_EMBED_MODEL || "text-embedding-3-small";
-const EMBED_DIMS = 1536;
 
 function getEmbeddingModel() {
   const apiKey =
