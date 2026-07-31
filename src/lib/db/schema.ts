@@ -501,6 +501,25 @@ export const habitLogs = sqliteTable("habit_logs", {
     .default(sql`(datetime('now'))`),
 });
 
+/* ═══════════ Quotes Harian (dashboard slider) ═══════════ */
+
+export const dailyQuotes = sqliteTable("daily_quotes", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  /** Tanggal quote (YYYY-MM-DD) — semua quote hari itu tampil di slider */
+  date: text("date").notNull(),
+  /** Isi quote */
+  content: text("content").notNull(),
+  /** Pengarang/sumber (default "AI LifeOS") */
+  author: text("author").default(""),
+  /** Topik (motivasi, disiplin, keluarga, dll.) */
+  topic: text("topic").default(""),
+  /** Urutan dalam slider hari itu */
+  position: integer("position").notNull().default(0),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+});
+
 /* ═══════════ Insight Feedback (AI belajar) ═══════════ */
 
 export const insightFeedback = sqliteTable("insight_feedback", {
@@ -560,3 +579,4 @@ export type TeamFeedback = typeof teamFeedback.$inferSelect;
 export type Insight = typeof insights.$inferSelect;
 export type BadHabit = typeof badHabits.$inferSelect;
 export type HabitLog = typeof habitLogs.$inferSelect;
+export type DailyQuote = typeof dailyQuotes.$inferSelect;
