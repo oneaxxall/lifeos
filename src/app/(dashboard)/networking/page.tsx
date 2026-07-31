@@ -1,7 +1,21 @@
-import { FeaturePlaceholder } from "@/components/layout/feature-placeholder";
+import { NetworkingWorkspace } from "@/components/networking/networking-workspace";
+
+export const metadata = {
+  title: "Networking — LifeOS",
+  description: "Kelola relasi profesional dengan bantuan AI.",
+};
 
 export default function NetworkingPage() {
   return (
-    <FeaturePlaceholder title="Networking" description="Kontak, follow-up, dan relasi profesional." />
+    <div className="space-y-6">
+      <header className="space-y-1">
+        <h1 className="text-3xl font-semibold tracking-tight">Networking</h1>
+        <p className="text-muted-foreground">
+          Catat relasi, jaga kehangatan — AI mengingatkan follow-up yang terlupakan.
+        </p>
+      </header>
+
+      <NetworkingWorkspace />
+    </div>
   );
 }

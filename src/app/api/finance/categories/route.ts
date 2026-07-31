@@ -1,16 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
-import { asc } from "drizzle-orm";
+import { asc, count } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { financeCategories } from "@/lib/db/schema";
+import { financeCategories, financeTransactions } from "@/lib/db/schema";
 
-/** GET /api/finance/categories — daftar kategori (dropdown/autocomplete) */
+/** GET /api/finance/categories — daftar kategori + jumlah transaksi per kategori */
 export async function GET() {
   const rows = db
     .select()
     .from(financeCategories)
     .orderBy(asc(financeCategories.name))
     .all();
-  return NextResponse.json({ data: rows });
+  const usage = db
+    .select({ categoryId: financeTransactions.categoryId, n: count() })
+    .from(financeTransactions)
+    .groupBy(financeTransactions.categoryId)
+    .all();
+  const usageMap = new Map(usage.map((u) => [u.categoryId, u.n]));
+  return NextResponse.json({
+    data: rows.map((c) => ({ ...c, count: usageMap.get(c.id) ?? 0 })),
+  });
 }
 
 /** POST /api/finance/categories — buat kategori baru */

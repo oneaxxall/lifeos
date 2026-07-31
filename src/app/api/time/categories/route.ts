@@ -1,12 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
-import { asc } from "drizzle-orm";
+import { asc, count } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { activityCategories } from "@/lib/db/schema";
+import { activities, activityCategories } from "@/lib/db/schema";
 
-/** GET /api/time/categories — kategori aktivitas (dropdown) */
+/** GET /api/time/categories — kategori aktivitas + jumlah aktivitas per kategori */
 export async function GET() {
   const rows = db.select().from(activityCategories).orderBy(asc(activityCategories.name)).all();
-  return NextResponse.json({ data: rows });
+  const usage = db
+    .select({ categoryId: activities.categoryId, n: count() })
+    .from(activities)
+    .groupBy(activities.categoryId)
+    .all();
+  const usageMap = new Map(usage.map((u) => [u.categoryId, u.n]));
+  return NextResponse.json({
+    data: rows.map((c) => ({ ...c, count: usageMap.get(c.id) ?? 0 })),
+  });
 }
 
 /** POST /api/time/categories — buat kategori aktivitas */

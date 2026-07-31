@@ -7,6 +7,8 @@ import { TimeSummaryPanel, type TimeSummaryData } from "@/components/time/time-s
 import { ActivityList, type ActivityItem } from "@/components/time/activity-list";
 import { TimeBlockPanel, type TimeBlockItem } from "@/components/time/time-block-panel";
 import { TimeInsightPanel } from "@/components/time/time-insight-panel";
+import { CategoryMenu, type CategoryMenuItem } from "@/components/ui/category-menu";
+import { CategoryManagerDialog } from "@/components/ui/category-manager-dialog";
 
 /** Orchestrator Time Management — state, fetch, compose komponen. */
 export function TimeWorkspace() {
@@ -18,6 +20,9 @@ export function TimeWorkspace() {
   const [range, setRange] = React.useState("hari");
   const [loading, setLoading] = React.useState(true);
   const [refreshKey, setRefreshKey] = React.useState(0);
+  const [categoryItems, setCategoryItems] = React.useState<CategoryMenuItem[]>([]);
+  const [manageOpen, setManageOpen] = React.useState(false);
+  const [menuCategoryId, setMenuCategoryId] = React.useState<number | null>(null);
 
   const loadAll = React.useCallback(async () => {
     const today = new Date().toISOString().slice(0, 10);
@@ -41,6 +46,7 @@ export function TimeWorkspace() {
       ]);
       setActivities(actJson.data ?? []);
       setCategories(catJson.data ?? []);
+      setCategoryItems(catJson.data ?? []);
       setRunning(actJson.active ?? null);
       setSummary(sumJson.data ?? null);
       setBlocks(blockJson.data ?? []);
@@ -73,6 +79,7 @@ export function TimeWorkspace() {
         if (cancelled) return;
         setActivities(actJson.data ?? []);
         setCategories(catJson.data ?? []);
+        setCategoryItems(catJson.data ?? []);
         setRunning(actJson.active ?? null);
         setSummary(sumJson.data ?? null);
         setBlocks(blockJson.data ?? []);
@@ -101,32 +108,58 @@ export function TimeWorkspace() {
     <div className="space-y-5">
       <TimeInsightPanel refreshKey={refreshKey} />
 
-      <TimerBar
-        categories={categories}
-        running={running}
-        onChanged={() => {
-          void loadAll();
-          setRefreshKey((k) => k + 1);
-        }}
-      />
+      <div className="grid gap-5 lg:grid-cols-[220px_1fr]">
+        {/* Group menu kategori */}
+        <aside className="space-y-4 lg:sticky lg:top-20 lg:self-start">
+          <CategoryMenu
+            title="Kategori Aktivitas"
+            items={categoryItems}
+            activeId={menuCategoryId}
+            onSelect={setMenuCategoryId}
+            onManage={() => setManageOpen(true)}
+          />
+        </aside>
 
-      <TimeSummaryPanel
-        data={summary}
-        range={range}
-        onRangeChange={setRange}
-      />
+        {/* Konten utama */}
+        <div className="min-w-0 space-y-5">
+          <TimerBar
+            categories={categories}
+            running={running}
+            onChanged={() => {
+              void loadAll();
+              setRefreshKey((k) => k + 1);
+            }}
+          />
 
-      <div className="grid gap-4 xl:grid-cols-2">
-        <TimeBlockPanel
-          blocks={blocks}
-          categories={categories}
-          onChanged={() => void loadAll()}
-        />
-        <ActivityList
-          activities={activities}
-          onChanged={() => void loadAll()}
-        />
+          <TimeSummaryPanel
+            data={summary}
+            range={range}
+            onRangeChange={setRange}
+          />
+
+          <div className="grid gap-4 xl:grid-cols-2">
+            <TimeBlockPanel
+              blocks={blocks}
+              categories={categories}
+              onChanged={() => void loadAll()}
+            />
+            <ActivityList
+              activities={activities}
+              menuCategoryId={menuCategoryId}
+              onChanged={() => void loadAll()}
+            />
+          </div>
+        </div>
       </div>
+
+      <CategoryManagerDialog
+        open={manageOpen}
+        onOpenChange={setManageOpen}
+        title="Kelola kategori aktivitas"
+        baseUrl="/api/time/categories"
+        items={categoryItems}
+        onChanged={() => void loadAll()}
+      />
     </div>
   );
 }

@@ -8,6 +8,8 @@ import { MonthlySummary, type MonthlySummaryData } from "@/components/finance/mo
 import { SubscriptionsPanel, type SubscriptionItem } from "@/components/finance/subscriptions-panel";
 import { BudgetPanel, type BudgetItem } from "@/components/finance/budget-panel";
 import { FinanceInsightPanel } from "@/components/finance/finance-insight-panel";
+import { CategoryMenu, type CategoryMenuItem } from "@/components/ui/category-menu";
+import { CategoryManagerDialog } from "@/components/ui/category-manager-dialog";
 import type { FinanceCategory } from "@/lib/db/schema";
 
 /** Orchestrator Finance — state, fetch, compose komponen.
@@ -21,6 +23,19 @@ export function FinanceWorkspace() {
   const [budgets, setBudgets] = React.useState<BudgetItem[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [refreshKey, setRefreshKey] = React.useState(0);
+  const [categoryItems, setCategoryItems] = React.useState<CategoryMenuItem[]>([]);
+  const [manageOpen, setManageOpen] = React.useState(false);
+  const [menuCategoryId, setMenuCategoryId] = React.useState<number | null>(null);
+
+  const loadCategories = React.useCallback(async () => {
+    try {
+      const res = await fetch("/api/finance/categories");
+      const json = await res.json();
+      setCategoryItems(json.data ?? []);
+    } catch {
+      /* abaikan */
+    }
+  }, []);
 
   const loadAll = React.useCallback(async () => {
     try {
@@ -68,6 +83,7 @@ export function FinanceWorkspace() {
         if (cancelled) return;
         setTransactions(txJson.data ?? []);
         setCategories(catJson.data ?? []);
+        setCategoryItems(catJson.data ?? []);
         setSummary(sumJson.data ?? null);
         setSubscriptions(subJson.data ?? []);
         setMonthlyTotal(subJson.monthlyTotal ?? 0);
@@ -112,34 +128,64 @@ export function FinanceWorkspace() {
     <div className="space-y-5">
       <FinanceInsightPanel refreshKey={refreshKey} />
 
-      <TransactionForm
-        categories={categories}
-        onSaved={handleChanged}
-        onCategoryCreated={(cat) =>
-          setCategories((prev) => [...prev, cat].sort((a, b) => a.name.localeCompare(b.name)))
-        }
-      />
+      <div className="grid gap-5 lg:grid-cols-[220px_1fr]">
+        {/* Group menu kategori */}
+        <aside className="space-y-4 lg:sticky lg:top-20 lg:self-start">
+          <CategoryMenu
+            title="Kategori Transaksi"
+            items={categoryItems}
+            activeId={menuCategoryId}
+            onSelect={setMenuCategoryId}
+            onManage={() => setManageOpen(true)}
+          />
+        </aside>
 
-      <MonthlySummary data={summary} />
+        {/* Konten utama */}
+        <div className="min-w-0 space-y-5">
+          <TransactionForm
+            categories={categories}
+            onSaved={handleChanged}
+            onCategoryCreated={(cat) => {
+              setCategories((prev) => [...prev, cat].sort((a, b) => a.name.localeCompare(b.name)));
+              void loadCategories();
+            }}
+          />
 
-      <div className="grid gap-4 xl:grid-cols-2">
-        <SubscriptionsPanel
-          subscriptions={subscriptions}
-          monthlyTotal={monthlyTotal}
-          onChanged={handleChanged}
-        />
-        <BudgetPanel
-          budgets={budgets}
-          categories={categories}
-          onChanged={handleChanged}
-        />
+          <MonthlySummary data={summary} />
+
+          <div className="grid gap-4 xl:grid-cols-2">
+            <SubscriptionsPanel
+              subscriptions={subscriptions}
+              monthlyTotal={monthlyTotal}
+              onChanged={handleChanged}
+            />
+            <BudgetPanel
+              budgets={budgets}
+              categories={categories}
+              onChanged={handleChanged}
+            />
+          </div>
+
+          <TransactionList
+            transactions={transactions}
+            categories={categories}
+            months={months}
+            menuCategoryId={menuCategoryId}
+            onDelete={handleChanged}
+          />
+        </div>
       </div>
 
-      <TransactionList
-        transactions={transactions}
-        categories={categories}
-        months={months}
-        onDelete={handleChanged}
+      <CategoryManagerDialog
+        open={manageOpen}
+        onOpenChange={setManageOpen}
+        title="Kelola kategori transaksi"
+        baseUrl="/api/finance/categories"
+        items={categoryItems}
+        onChanged={() => {
+          void loadCategories();
+          void loadAll();
+        }}
       />
     </div>
   );

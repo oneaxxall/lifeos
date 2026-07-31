@@ -71,6 +71,48 @@
       "when": 1785500508460,
       "tag": "0009_sick-entries",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1785501130593,
+      "tag": "0010_family-entries",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "6",
+      "when": 1785501618865,
+      "tag": "0011_spiritual",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "6",
+      "when": 1785502276931,
+      "tag": "0012_business",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "6",
+      "when": 1785502768800,
+      "tag": "0013_networking",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "6",
+      "when": 1785503092785,
+      "tag": "0014_team-management",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "6",
+      "when": 1785503511064,
+      "tag": "0015_insights",
+      "breakpoints": true
     }
   ]
 }

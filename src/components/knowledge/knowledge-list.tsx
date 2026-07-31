@@ -7,6 +7,8 @@ import { KnowledgeGrid } from "@/components/knowledge/knowledge-grid";
 import { KnowledgePreviewDialog } from "@/components/knowledge/knowledge-preview-dialog";
 import { KnowledgeEditorDialog } from "@/components/knowledge/knowledge-editor-dialog";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { CategoryMenu, type CategoryMenuItem } from "@/components/ui/category-menu";
+import { CategoryManagerDialog } from "@/components/ui/category-manager-dialog";
 import type { KnowledgeItem } from "@/components/knowledge/knowledge-card";
 
 const DEFAULT_FILTERS: KnowledgeFilterState = {
@@ -29,6 +31,18 @@ export function KnowledgeList() {
   const [editorOpen, setEditorOpen] = React.useState(false);
   const [deleteTarget, setDeleteTarget] = React.useState<KnowledgeItem | null>(null);
   const [deleting, setDeleting] = React.useState(false);
+  const [categoryItems, setCategoryItems] = React.useState<CategoryMenuItem[]>([]);
+  const [manageOpen, setManageOpen] = React.useState(false);
+
+  const loadCategories = React.useCallback(async () => {
+    try {
+      const res = await fetch("/api/knowledge/categories");
+      const json = await res.json();
+      setCategoryItems(json.data ?? []);
+    } catch {
+      /* dropdown tetap jalan dari labels */
+    }
+  }, []);
 
   const load = React.useCallback(async (f: KnowledgeFilterState) => {
     try {
@@ -53,14 +67,16 @@ export function KnowledgeList() {
     Promise.all([
       fetch("/api/knowledge").then((r) => r.json()),
       fetch("/api/knowledge/labels").then((r) => r.json()),
+      fetch("/api/knowledge/categories").then((r) => r.json()),
     ])
-      .then(([listJson, labelsJson]) => {
+      .then(([listJson, labelsJson, catJson]) => {
         if (cancelled) return;
         setItems(listJson.data ?? []);
         setAllCategories(
           labelsJson.data.categories.map((c: { name: string }) => c.name)
         );
         setAllTags(labelsJson.data.tags.map((t: { name: string }) => t.name));
+        setCategoryItems(catJson.data ?? []);
       })
       .catch(() => {
         if (!cancelled) toast.error("Gagal memuat knowledge");
@@ -115,21 +131,66 @@ export function KnowledgeList() {
     setEditorOpen(true);
   };
 
+  // Kategori aktif dari filter (nama → id)
+  const activeCategoryId =
+    categoryItems.find((c) => c.name === filters.category)?.id ?? null;
+
+  const onSelectCategory = (id: number | null) => {
+    const name = id === null ? "" : categoryItems.find((c) => c.id === id)?.name ?? "";
+    onFiltersChange({ ...filters, category: name });
+  };
+
+  const onCategoryChanged = () => {
+    void loadCategories();
+    // Refresh opsi dropdown labels juga
+    fetch("/api/knowledge/labels")
+      .then((r) => r.json())
+      .then((json) => {
+        setAllCategories(json.data.categories.map((c: { name: string }) => c.name));
+      })
+      .catch(() => {});
+  };
+
   return (
     <div className="space-y-5">
-      <KnowledgeFilters
-        value={filters}
-        onChange={onFiltersChange}
-        categories={allCategories}
-        tags={allTags}
-      />
+      <div className="grid gap-5 lg:grid-cols-[220px_1fr]">
+        {/* Group menu kategori */}
+        <aside className="space-y-4 lg:sticky lg:top-20 lg:self-start">
+          <CategoryMenu
+            title="Kategori Knowledge"
+            items={categoryItems}
+            activeId={activeCategoryId}
+            onSelect={onSelectCategory}
+            onManage={() => setManageOpen(true)}
+          />
+        </aside>
 
-      <KnowledgeGrid
-        items={items}
-        loading={loading}
-        onPreview={setPreviewItem}
-        onEdit={openEdit}
-        onDelete={(item) => setDeleteTarget(item)}
+        {/* Konten utama */}
+        <div className="min-w-0 space-y-5">
+          <KnowledgeFilters
+            value={filters}
+            onChange={onFiltersChange}
+            categories={allCategories}
+            tags={allTags}
+          />
+
+          <KnowledgeGrid
+            items={items}
+            loading={loading}
+            onPreview={setPreviewItem}
+            onEdit={openEdit}
+            onDelete={(item) => setDeleteTarget(item)}
+          />
+        </div>
+      </div>
+
+      <CategoryManagerDialog
+        open={manageOpen}
+        onOpenChange={setManageOpen}
+        title="Kelola kategori Knowledge"
+        baseUrl="/api/knowledge/categories"
+        items={categoryItems}
+        onChanged={onCategoryChanged}
       />
 
       <KnowledgePreviewDialog

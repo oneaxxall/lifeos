@@ -15,6 +15,7 @@ export interface ActivityItem {
   startedAt: string;
   endedAt: string;
   durationMinutes: number;
+  categoryId: number | null;
   categoryName: string | null;
   categoryValue: "produktif" | "netral" | "buang" | null;
   categoryColor: string | null;
@@ -35,13 +36,19 @@ const VALUE_META = {
 
 interface Props {
   activities: ActivityItem[];
+  /** Filter kategori dari menu samping (null = semua) */
+  menuCategoryId?: number | null;
   onChanged: () => void;
 }
 
 /** Daftar aktivitas terakhir — riwayat + durasi + nilai (TIM-01/03). */
-export function ActivityList({ activities, onChanged }: Props) {
+export function ActivityList({ activities, menuCategoryId = null, onChanged }: Props) {
   const [deleteTarget, setDeleteTarget] = React.useState<ActivityItem | null>(null);
   const [deleting, setDeleting] = React.useState(false);
+
+  const filtered = menuCategoryId === null
+    ? activities
+    : activities.filter((a) => a.categoryId === menuCategoryId);
 
   const remove = async (a: ActivityItem) => {
     setDeleting(true);
@@ -62,16 +69,18 @@ export function ActivityList({ activities, onChanged }: Props) {
     <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
       <p className="mb-3 flex items-center gap-2 text-sm font-semibold">
         <History className="size-4 text-primary" /> Riwayat aktivitas
-        <Badge variant="secondary" className="text-[10px]">{activities.length}</Badge>
+        <Badge variant="secondary" className="text-[10px]">{filtered.length}</Badge>
       </p>
 
-      {activities.length === 0 ? (
+      {filtered.length === 0 ? (
         <p className="py-6 text-center text-sm text-muted-foreground">
-          Belum ada aktivitas — mulai timer di atas!
+          {activities.length === 0
+            ? "Belum ada aktivitas — mulai timer di atas!"
+            : "Tidak ada aktivitas di kategori ini."}
         </p>
       ) : (
         <ul className="max-h-[300px] space-y-1.5 overflow-y-auto pr-1">
-          {activities.map((a) => (
+          {filtered.map((a) => (
             <li
               key={a.id}
               className="group flex items-center gap-3 rounded-lg border border-border/60 px-3 py-2 transition-colors hover:bg-muted/40"

@@ -37,12 +37,14 @@ interface Props {
   categories: FinanceCategory[];
   /** Opsi bulan yang tersedia (YYYY-MM) */
   months: string[];
+  /** Filter kategori dari menu samping (null = semua) */
+  menuCategoryId?: number | null;
   onDelete: () => void;
 }
 
 /** Daftar transaksi + filter dropdown (bulan, kategori, tipe) — FIN-01/03.
  *  Single responsibility: menampilkan & menghapus transaksi. */
-export function TransactionList({ transactions, categories, months, onDelete }: Props) {
+export function TransactionList({ transactions, categories, months, menuCategoryId = null, onDelete }: Props) {
   const [month, setMonth] = React.useState(months[0] ?? "");
   const [categoryFilter, setCategoryFilter] = React.useState("all");
   const [typeFilter, setTypeFilter] = React.useState("all");
@@ -52,6 +54,7 @@ export function TransactionList({ transactions, categories, months, onDelete }: 
 
   const filtered = transactions.filter((t) => {
     if (month && !t.date.startsWith(month)) return false;
+    if (menuCategoryId !== null && t.categoryId !== menuCategoryId) return false;
     if (categoryFilter !== "all" && t.categoryId !== Number(categoryFilter)) return false;
     if (typeFilter !== "all" && t.type !== typeFilter) return false;
     return true;

@@ -274,6 +274,188 @@ export const sickEntries = sqliteTable("sick_entries", {
     .default(sql`(datetime('now'))`),
 });
 
+/* ═══════════ Family (Curhatan & Jurnal Keluarga) ═══════════ */
+
+export const familyEntries = sqliteTable("family_entries", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  /** Curhatan / cerita keluarga (teks bebas) */
+  content: text("content").notNull(),
+  /** Konteks: siapa yang terlibat (pasangan, anak, orang tua, mertua…) */
+  people: text("people").default(""),
+  /** Suasana hati saat curhat (opsional) */
+  mood: text("mood").default(""),
+  /** Hasil nasihat AI (teks) */
+  aiAdvice: text("ai_advice").default(""),
+  date: text("date").notNull().default(sql`(date('now'))`),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+});
+
+/* ═══════════ Spiritual ═══════════ */
+
+/** Ritual harian default — checklist per hari */
+export const SPIRITUAL_RITUALS = [
+  { key: "sholat", label: "Sholat 5 waktu", icon: "🕌" },
+  { key: "quran", label: "Baca Al-Quran", icon: "📖" },
+  { key: "dzikir", label: "Dzikir pagi/petang", icon: "📿" },
+  { key: "doa", label: "Doa & munajat", icon: "🤲" },
+] as const;
+
+export type SpiritualRitualKey = (typeof SPIRITUAL_RITUALS)[number]["key"];
+
+export const spiritualEntries = sqliteTable("spiritual_entries", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  /** Tanggal (ISO date) — unik per hari */
+  date: text("date").notNull().unique(),
+  /** Checklist ritual: JSON {"sholat":true,"quran":false,...} */
+  rituals: text("rituals").notNull().default("{}"),
+  /** Kualitas ibadah (1-5, opsional) */
+  quality: integer("quality").default(0),
+  /** Refleksi singkat (opsional) */
+  reflection: text("reflection").default(""),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+});
+
+export const spiritualGoals = sqliteTable("spiritual_goals", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  /** Target khatam Quran (juz) */
+  quranKhatamJuz: integer("quran_khatam_juz").default(0),
+  /** Target baca Quran per minggu (menit) */
+  weeklyReadMinutes: integer("weekly_read_minutes").default(0),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+});
+
+/* ═══════════ Business ═══════════ */
+
+export const businessIdeas = sqliteTable("business_ideas", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  title: text("title").notNull(),
+  /** Deskripsi singkat / potensi */
+  description: text("description").default(""),
+  /** Status: baru | dieksekusi | berhenti */
+  status: text("status").notNull().default("baru"),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+});
+
+/** Tahap proyek bisnis */
+export const PROJECT_STAGES = ["riset", "mvp", "luncur", "tumbuh"] as const;
+export type ProjectStage = (typeof PROJECT_STAGES)[number];
+
+export const businessProjects = sqliteTable("business_projects", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  name: text("name").notNull(),
+  /** Tahap: riset | mvp | luncur | tumbuh */
+  stage: text("stage").notNull().default("riset"),
+  /** Target (teks bebas, mis. "100 user pertama") */
+  target: text("target").default(""),
+  /** Deadline (ISO date, opsional) */
+  deadline: text("deadline").default(""),
+  /** Aktif? (untuk filter prioritas) */
+  active: integer("active", { mode: "boolean" }).notNull().default(true),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+});
+
+/* ═══════════ Networking ═══════════ */
+
+/** Prioritas relasi */
+export const CONTACT_PRIORITIES = ["penting", "sedang", "ringan"] as const;
+export type ContactPriority = (typeof CONTACT_PRIORITIES)[number];
+
+export const contacts = sqliteTable("contacts", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  name: text("name").notNull(),
+  /** Peran/jabatan */
+  role: text("role").default(""),
+  /** Perusahaan/instansi */
+  company: text("company").default(""),
+  /** Konteks kenal (mis. "Conference 2025") */
+  context: text("context").default(""),
+  /** Minat/personal (mis. "Suka golf, baru punya anak") */
+  interests: text("interests").default(""),
+  /** Prioritas relasi: penting | sedang | ringan */
+  priority: text("priority").notNull().default("sedang"),
+  /** Terakhir kontak (ISO date) — untuk deteksi follow-up */
+  lastContact: text("last_contact").default(""),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+});
+
+/* ═══════════ Team Management ═══════════ */
+
+export const teamMembers = sqliteTable("team_members", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  name: text("name").notNull(),
+  /** Peran di tim */
+  role: text("role").default(""),
+  /** Senioritas: junior | mid | senior | lead */
+  seniority: text("seniority").notNull().default("mid"),
+  /** Kekuatan / area fokus (opsional) */
+  strengths: text("strengths").default(""),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+});
+
+export const teamOneOnOnes = sqliteTable("team_one_on_ones", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  memberId: integer("member_id").notNull(),
+  /** Tanggal 1-on-1 (ISO date) */
+  date: text("date").notNull(),
+  /** Topik yang dibahas */
+  topics: text("topics").default(""),
+  /** Action items (teks bebas, dipisah baris) */
+  actionItems: text("action_items").default(""),
+  /** Catatan lain / mood anggota (opsional) */
+  notes: text("notes").default(""),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+});
+
+/** Penilaian & feedback berkala (TE-05) */
+export const teamFeedback = sqliteTable("team_feedback", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  memberId: integer("member_id").notNull(),
+  /** Periode (mis. "Q3 2026") */
+  period: text("period").default(""),
+  /** Penilaian 1-5 */
+  rating: integer("rating").default(0),
+  /** Feedback kualitatif */
+  feedback: text("feedback").default(""),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+});
+
+/* ═══════════ Insights (Hub AI lintas fitur) ═══════════ */
+
+export const insights = sqliteTable("insights", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  /** Tipe: harian | mingguan | korelasi | tanya */
+  type: text("type").notNull().default("harian"),
+  title: text("title").notNull(),
+  /** Isi insight */
+  content: text("content").notNull(),
+  /** Status feedback: baru | dilakukan | diabaikan */
+  status: text("status").notNull().default("baru"),
+  /** Sumber fitur (opsional, untuk filter) */
+  source: text("source").default(""),
+  date: text("date").notNull().default(sql`(date('now'))`),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+});
+
 /* ═══════════ Insight Feedback (AI belajar) ═══════════ */
 
 export const insightFeedback = sqliteTable("insight_feedback", {
@@ -321,3 +503,13 @@ export type HealthGoal = typeof healthGoals.$inferSelect;
 export type MoodEntry = typeof moodEntries.$inferSelect;
 export type JournalEntry = typeof journalEntries.$inferSelect;
 export type SickEntry = typeof sickEntries.$inferSelect;
+export type FamilyEntry = typeof familyEntries.$inferSelect;
+export type SpiritualEntry = typeof spiritualEntries.$inferSelect;
+export type SpiritualGoal = typeof spiritualGoals.$inferSelect;
+export type BusinessIdea = typeof businessIdeas.$inferSelect;
+export type BusinessProject = typeof businessProjects.$inferSelect;
+export type Contact = typeof contacts.$inferSelect;
+export type TeamMember = typeof teamMembers.$inferSelect;
+export type TeamOneOnOne = typeof teamOneOnOnes.$inferSelect;
+export type TeamFeedback = typeof teamFeedback.$inferSelect;
+export type Insight = typeof insights.$inferSelect;
