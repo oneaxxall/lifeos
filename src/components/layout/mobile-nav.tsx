@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, Sparkles } from "lucide-react";
+import { Menu, Sparkles, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -84,8 +84,22 @@ export function MobileNav() {
         </nav>
 
         {/* Footer */}
-        <div className="border-t border-border p-3">
+        <div className="space-y-1.5 border-t border-border p-3">
           <ThemeToggle />
+          <button
+            onClick={async () => {
+              try {
+                await fetch("/api/auth/logout", { method: "POST" });
+              } catch {
+                // tetap redirect walau gagal
+              }
+              window.location.href = "/login";
+            }}
+            className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground"
+          >
+            <LogOut className="size-4 shrink-0" />
+            Keluar
+          </button>
         </div>
       </SheetContent>
     </Sheet>
