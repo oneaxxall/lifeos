@@ -1,5 +1,3 @@
-import { NextResponse } from "next/server";
-
 /**
  * Cache hasil analisa AI di memori (TTL 15 menit).
  * Tujuan: hindari panggilan LLM berulang saat user bolak-balik menu —
@@ -7,7 +5,7 @@ import { NextResponse } from "next/server";
  *
  * Key per route + tanggal → brief harian tetap segar per hari.
  */
-const cache = new Map<string, { expiresAt: number; value: NextResponse }>();
+const cache = new Map<string, { expiresAt: number; value: unknown }>();
 
 const TTL_MS = 15 * 60 * 1000;
 

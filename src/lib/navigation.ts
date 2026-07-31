@@ -3,6 +3,7 @@ import {
   Briefcase,
   CheckSquare,
   Clock,
+  DatabaseBackup,
   Handshake,
   HeartPulse,
   Home,
@@ -57,6 +58,12 @@ export const navGroups: NavGroup[] = [
       { title: "Business", href: "/business", icon: Briefcase, description: "Bisnis & ide" },
       { title: "Networking", href: "/networking", icon: Handshake, description: "Relasi profesional" },
       { title: "Team", href: "/team", icon: UsersRound, description: "Manajemen tim" },
+    ],
+  },
+  {
+    label: "Sistem",
+    items: [
+      { title: "Backup", href: "/backup", icon: DatabaseBackup, description: "Backup & restore data" },
     ],
   },
 ];

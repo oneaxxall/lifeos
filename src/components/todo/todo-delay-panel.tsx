@@ -12,41 +12,26 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { DelayedTodo, DelayInsight } from "@/lib/ai/todo-delay";
+import { useInsightPanel } from "@/lib/hooks/use-insight-panel";
 
 interface Props {
   refreshKey: number;
 }
 
+interface DelayData {
+  delayed: DelayedTodo[];
+  insight: DelayInsight | null;
+}
+
 /** Panel deteksi penundaan — tugas tertunda + pola AI (TDO-05). Collapsible. */
 export function TodoDelayPanel({ refreshKey }: Props) {
-  const [delayed, setDelayed] = React.useState<DelayedTodo[]>([]);
-  const [insight, setInsight] = React.useState<DelayInsight | null>(null);
-  const [source, setSource] = React.useState<"ai" | "heuristik" | "kosong" | null>(null);
-  const [loading, setLoading] = React.useState(true);
-  const [collapsed, setCollapsed] = React.useState(true);
+  const { data, source, loading, collapsed, setCollapsed, fetched } =
+    useInsightPanel<DelayData>("/api/ai/todo-delay", refreshKey);
 
-  React.useEffect(() => {
-    let cancelled = false;
-    fetch("/api/ai/todo-delay", { method: "POST" })
-      .then((r) => r.json())
-      .then((json) => {
-        if (cancelled) return;
-        if (json.ok) {
-          setDelayed(json.data.delayed ?? []);
-          setInsight(json.data.insight ?? null);
-          setSource(json.source ?? null);
-        }
-      })
-      .catch(() => {})
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [refreshKey]);
+  const delayed = data?.delayed ?? [];
+  const insight = data?.insight ?? null;
 
-  if (loading) {
+  if (loading && !data) {
     return (
       <div className="flex items-center gap-3 rounded-xl border border-destructive/20 bg-destructive/5 p-3.5">
         <Loader2 className="size-4 animate-spin text-destructive" />
@@ -55,7 +40,7 @@ export function TodoDelayPanel({ refreshKey }: Props) {
     );
   }
 
-  if (source === "kosong" || delayed.length === 0) {
+  if (fetched && (source === "kosong" || delayed.length === 0)) {
     return null; // Tidak ada tugas tertunda — panel disembunyikan
   }
 
@@ -98,7 +83,7 @@ export function TodoDelayPanel({ refreshKey }: Props) {
       </div>
 
       {/* Isi panel */}
-      {!collapsed && (
+      {!collapsed && data && (
         <div className="px-4 pb-4">
           <ul className="space-y-2">
             {delayed.slice(0, 5).map((d) => (

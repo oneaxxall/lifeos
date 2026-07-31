@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { TimeInsight } from "@/lib/ai/time-insight";
 
+import { useInsightPanel } from "@/lib/hooks/use-insight-panel";
 interface Props {
   refreshKey: number;
 }
@@ -27,32 +28,10 @@ function formatDur(menit: number): string {
 
 /** Panel analisa waktu AI — pemborosan, jam puncak, ringkasan mingguan (TIM-05/06/07). Collapsible. */
 export function TimeInsightPanel({ refreshKey }: Props) {
-  const [data, setData] = React.useState<TimeInsight | null>(null);
-  const [source, setSource] = React.useState<"ai" | "heuristik" | "kosong" | null>(null);
-  const [loading, setLoading] = React.useState(true);
-  const [collapsed, setCollapsed] = React.useState(true);
+  const { data, source, loading, collapsed, setCollapsed, fetched } =
+    useInsightPanel<TimeInsight>("/api/time/analyze", refreshKey, true);
 
-  React.useEffect(() => {
-    let cancelled = false;
-    fetch("/api/time/analyze", { method: "POST" })
-      .then((r) => r.json())
-      .then((json) => {
-        if (cancelled) return;
-        if (json.ok) {
-          setData(json.data ?? null);
-          setSource(json.source ?? null);
-        }
-      })
-      .catch(() => {})
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [refreshKey]);
-
-  if (loading) {
+  if (loading && !data) {
     return (
       <div className="flex items-center gap-3 rounded-xl border border-border bg-card p-3.5">
         <Loader2 className="size-4 animate-spin text-primary" />
@@ -61,7 +40,7 @@ export function TimeInsightPanel({ refreshKey }: Props) {
     );
   }
 
-  if (source === "kosong" || !data) return null;
+  if (fetched && source === "kosong") return null;
 
   return (
     <div className="overflow-hidden rounded-xl border border-primary/25 bg-gradient-to-br from-primary/8 via-card to-card shadow-sm">
@@ -88,12 +67,12 @@ export function TimeInsightPanel({ refreshKey }: Props) {
               </Badge>
             )}
           </p>
-          <p className="truncate text-[10px] text-muted-foreground">{data.ringkasan}</p>
+          <p className="truncate text-[10px] text-muted-foreground">{data?.ringkasan ?? "Klik untuk menganalisa"}</p>
         </div>
       </div>
 
       {/* Isi */}
-      {!collapsed && (
+      {!collapsed && data && (
         <div className="grid gap-3 px-4 pb-4 md:grid-cols-3">
           {/* Pemborosan */}
           <div className="rounded-lg border border-border/70 bg-background/60 p-3">

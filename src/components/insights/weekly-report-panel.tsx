@@ -12,38 +12,17 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { WeeklyReport } from "@/lib/ai/insights";
 
+import { useInsightPanel } from "@/lib/hooks/use-insight-panel";
 interface Props {
   refreshKey: number;
 }
 
 /** Laporan mingguan + korelasi lintas fitur (IN-04/05). Collapsible default tertutup. */
 export function WeeklyReportPanel({ refreshKey }: Props) {
-  const [data, setData] = React.useState<WeeklyReport | null>(null);
-  const [source, setSource] = React.useState<"ai" | "heuristik" | "kosong" | null>(null);
-  const [loading, setLoading] = React.useState(true);
-  const [collapsed, setCollapsed] = React.useState(true);
+  const { data, source, loading, collapsed, setCollapsed, fetched } =
+    useInsightPanel<WeeklyReport>("/api/insights/weekly", refreshKey, true);
 
-  React.useEffect(() => {
-    let cancelled = false;
-    fetch("/api/insights/weekly", { method: "POST" })
-      .then((r) => r.json())
-      .then((json) => {
-        if (cancelled) return;
-        if (json.ok) {
-          setData(json.data ?? null);
-          setSource(json.source ?? null);
-        }
-      })
-      .catch(() => {})
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [refreshKey]);
-
-  if (loading) {
+  if (loading && !data) {
     return (
       <div className="flex items-center gap-3 rounded-xl border border-border bg-card p-3.5">
         <Loader2 className="size-4 animate-spin text-primary" />
@@ -52,7 +31,7 @@ export function WeeklyReportPanel({ refreshKey }: Props) {
     );
   }
 
-  if (source === "kosong" || !data) return null;
+  if (fetched && source === "kosong") return null;
 
   return (
     <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
@@ -79,12 +58,12 @@ export function WeeklyReportPanel({ refreshKey }: Props) {
               </Badge>
             )}
           </p>
-          <p className="truncate text-[10px] text-muted-foreground">{data.ringkasan}</p>
+          <p className="truncate text-[10px] text-muted-foreground">{data?.ringkasan ?? "Klik untuk menganalisa"}</p>
         </div>
       </div>
 
       {/* Isi */}
-      {!collapsed && (
+      {!collapsed && data && (
         <div className="space-y-2.5 px-4 pb-4">
           <p className="rounded-lg border border-border/70 bg-background/60 p-3 text-sm leading-relaxed">
             {data.ringkasan}

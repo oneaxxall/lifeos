@@ -12,6 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { DailyBrief } from "@/lib/ai/insights";
+import { useInsightPanel } from "@/lib/hooks/use-insight-panel";
 
 interface Props {
   refreshKey: number;
@@ -19,32 +20,10 @@ interface Props {
 
 /** Brief harian AI + perintah tindakan (IN-01/02). Collapsible. */
 export function DailyBriefPanel({ refreshKey }: Props) {
-  const [data, setData] = React.useState<DailyBrief | null>(null);
-  const [source, setSource] = React.useState<"ai" | "heuristik" | "kosong" | null>(null);
-  const [loading, setLoading] = React.useState(true);
-  const [collapsed, setCollapsed] = React.useState(false); // brief harian = default TERBUKA
+  const { data, source, loading, collapsed, setCollapsed, fetched } =
+    useInsightPanel<DailyBrief>("/api/insights/daily", refreshKey, false);
 
-  React.useEffect(() => {
-    let cancelled = false;
-    fetch("/api/insights/daily", { method: "POST" })
-      .then((r) => r.json())
-      .then((json) => {
-        if (cancelled) return;
-        if (json.ok) {
-          setData(json.data ?? null);
-          setSource(json.source ?? null);
-        }
-      })
-      .catch(() => {})
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [refreshKey]);
-
-  if (loading) {
+  if (loading && !data) {
     return (
       <div className="flex items-center gap-3 rounded-xl border border-border bg-card p-4">
         <Loader2 className="size-4 animate-spin text-primary" />
@@ -53,7 +32,7 @@ export function DailyBriefPanel({ refreshKey }: Props) {
     );
   }
 
-  if (source === "kosong" || !data) return null;
+  if (fetched && source === "kosong") return null;
 
   return (
     <div className="overflow-hidden rounded-xl border border-primary/30 bg-gradient-to-br from-primary/10 via-card to-card shadow-sm">
@@ -87,7 +66,7 @@ export function DailyBriefPanel({ refreshKey }: Props) {
       </div>
 
       {/* Isi */}
-      {!collapsed && (
+      {!collapsed && data && (
         <div className="space-y-3 px-4 pb-4">
           <p className="rounded-lg border border-border/70 bg-background/60 p-3 text-sm leading-relaxed">
             {data.ringkasan}

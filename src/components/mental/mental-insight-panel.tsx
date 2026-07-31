@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { MentalInsight } from "@/lib/ai/mental-insight";
 
+import { useInsightPanel } from "@/lib/hooks/use-insight-panel";
 interface Props {
   refreshKey: number;
 }
@@ -21,32 +22,10 @@ interface Props {
 /** Panel analisa mental AI — pola mood, korelasi lintas fitur, saran (MEN-03/04/05).
  *  Collapsible + disclaimer etika. */
 export function MentalInsightPanel({ refreshKey }: Props) {
-  const [data, setData] = React.useState<MentalInsight | null>(null);
-  const [source, setSource] = React.useState<"ai" | "heuristik" | "kosong" | null>(null);
-  const [loading, setLoading] = React.useState(true);
-  const [collapsed, setCollapsed] = React.useState(true);
+  const { data, source, loading, collapsed, setCollapsed, fetched } =
+    useInsightPanel<MentalInsight>("/api/mental/analyze", refreshKey, true);
 
-  React.useEffect(() => {
-    let cancelled = false;
-    fetch("/api/mental/analyze", { method: "POST" })
-      .then((r) => r.json())
-      .then((json) => {
-        if (cancelled) return;
-        if (json.ok) {
-          setData(json.data ?? null);
-          setSource(json.source ?? null);
-        }
-      })
-      .catch(() => {})
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [refreshKey]);
-
-  if (loading) {
+  if (loading && !data) {
     return (
       <div className="flex items-center gap-3 rounded-xl border border-border bg-card p-3.5">
         <Loader2 className="size-4 animate-spin text-violet-600" />
@@ -55,7 +34,7 @@ export function MentalInsightPanel({ refreshKey }: Props) {
     );
   }
 
-  if (source === "kosong" || !data) return null;
+  if (fetched && source === "kosong") return null;
 
   return (
     <div className="overflow-hidden rounded-xl border border-violet-500/25 bg-gradient-to-br from-violet-500/8 via-card to-card shadow-sm">
@@ -81,18 +60,18 @@ export function MentalInsightPanel({ refreshKey }: Props) {
                 offline
               </Badge>
             )}
-            {data.butuhProfesional && (
+            {data?.butuhProfesional && (
               <Badge className="ml-2 align-middle bg-amber-500/15 text-[9px] text-amber-600 dark:text-amber-400 hover:bg-amber-500/15">
                 💛 butuh dukungan
               </Badge>
             )}
           </p>
-          <p className="truncate text-[10px] text-muted-foreground">{data.ringkasan}</p>
+          <p className="truncate text-[10px] text-muted-foreground">{data?.ringkasan ?? "Klik untuk menganalisa"}</p>
         </div>
       </div>
 
       {/* Isi */}
-      {!collapsed && (
+      {!collapsed && data && (
         <div className="space-y-3 px-4 pb-4">
           <div className="grid gap-3 md:grid-cols-2">
             {/* Pola mood */}

@@ -1,7 +1,8 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, Literata, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
+import { ServiceWorkerRegister } from "@/components/layout/service-worker-register";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -22,6 +23,32 @@ export const metadata: Metadata = {
   title: "LifeOS — Second Brain",
   description:
     "Satu portal kehidupan terintegrasi AI: Knowledge, Todo, Finance, Health, dan lainnya.",
+  manifest: "/manifest.webmanifest",
+  applicationName: "LifeOS",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "LifeOS",
+  },
+  icons: {
+    icon: [
+      { url: "/icons/favicon.png", sizes: "32x32", type: "image/png" },
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+  },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#0d9488" },
+    { media: "(prefers-color-scheme: dark)", color: "#0c0a09" },
+  ],
 };
 
 export default function RootLayout({
@@ -44,6 +71,7 @@ export default function RootLayout({
         >
           {children}
         </ThemeProvider>
+        <ServiceWorkerRegister />
       </body>
     </html>
   );

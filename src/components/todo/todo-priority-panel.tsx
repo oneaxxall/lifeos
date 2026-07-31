@@ -13,6 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { TodoPriority } from "@/lib/ai/todo-priority";
+import { useInsightPanel } from "@/lib/hooks/use-insight-panel";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -23,59 +24,9 @@ interface Props {
 /** Panel saran prioritas AI — 3 tugas terpenting hari ini + alasan (TDO-04).
  *  Collapsible: bisa ditutup agar tidak memakan space UI. */
 export function TodoPriorityPanel({ refreshKey }: Props) {
-  const [data, setData] = React.useState<TodoPriority | null>(null);
-  const [source, setSource] = React.useState<"ai" | "heuristik" | "kosong" | null>(null);
-  const [loading, setLoading] = React.useState(true);
+  const { data, source, loading, collapsed, setCollapsed, fetched, reload } =
+    useInsightPanel<TodoPriority>("/api/ai/todo-priority", refreshKey);
   const [error, setError] = React.useState("");
-  const [collapsed, setCollapsed] = React.useState(true);
-
-  const load = React.useCallback(async () => {
-    try {
-      const res = await fetch("/api/ai/todo-priority", { method: "POST" });
-      const json = await res.json();
-      if (json.ok) {
-        setData(json.data ?? null);
-        setSource(json.source ?? null);
-      } else {
-        setError(json.error || "Gagal memuat saran");
-      }
-    } catch {
-      setError("Gagal terhubung ke server");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  // Muat awal — fetch langsung di effect (setState hanya setelah await)
-  React.useEffect(() => {
-    let cancelled = false;
-    fetch("/api/ai/todo-priority", { method: "POST" })
-      .then((r) => r.json())
-      .then((json) => {
-        if (cancelled) return;
-        if (json.ok) {
-          setData(json.data ?? null);
-          setSource(json.source ?? null);
-        } else {
-          setError(json.error || "Gagal memuat saran");
-        }
-      })
-      .catch(() => {
-        if (!cancelled) setError("Gagal terhubung ke server");
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [refreshKey]);
-
-  const refresh = () => {
-    setLoading(true);
-    setError("");
-    void load();
-  };
 
   if (loading && !data) {
     return (
@@ -86,7 +37,7 @@ export function TodoPriorityPanel({ refreshKey }: Props) {
     );
   }
 
-  if (source === "kosong" || (!data || data.prioritas.length === 0)) {
+  if (fetched && (source === "kosong" || (!data || data.prioritas.length === 0))) {
     return null; // Tidak ada tugas aktif — panel disembunyikan
   }
 
@@ -97,6 +48,11 @@ export function TodoPriorityPanel({ refreshKey }: Props) {
       </div>
     );
   }
+
+  const refresh = () => {
+    setError("");
+    reload();
+  };
 
   return (
     <div className="overflow-hidden rounded-xl border border-primary/25 bg-gradient-to-br from-primary/8 via-card to-card shadow-sm">
@@ -147,7 +103,7 @@ export function TodoPriorityPanel({ refreshKey }: Props) {
       </div>
 
       {/* Isi panel — disembunyikan saat collapsed */}
-      {!collapsed && (
+      {!collapsed && data && (
         <div className="px-4 pb-4">
           <ol className="space-y-2">
             {data.prioritas.map((p, i) => (

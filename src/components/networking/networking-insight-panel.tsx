@@ -15,38 +15,17 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { NetworkingInsight } from "@/lib/ai/networking-insight";
 
+import { useInsightPanel } from "@/lib/hooks/use-insight-panel";
 interface Props {
   refreshKey: number;
 }
 
 /** Panel networking AI — follow-up + saran mingguan (NW-02/03). Collapsible. */
 export function NetworkingInsightPanel({ refreshKey }: Props) {
-  const [data, setData] = React.useState<NetworkingInsight | null>(null);
-  const [source, setSource] = React.useState<"ai" | "heuristik" | "kosong" | null>(null);
-  const [loading, setLoading] = React.useState(true);
-  const [collapsed, setCollapsed] = React.useState(true);
+  const { data, source, loading, collapsed, setCollapsed, fetched } =
+    useInsightPanel<NetworkingInsight>("/api/networking/analyze", refreshKey, true);
 
-  React.useEffect(() => {
-    let cancelled = false;
-    fetch("/api/networking/analyze", { method: "POST" })
-      .then((r) => r.json())
-      .then((json) => {
-        if (cancelled) return;
-        if (json.ok) {
-          setData(json.data ?? null);
-          setSource(json.source ?? null);
-        }
-      })
-      .catch(() => {})
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [refreshKey]);
-
-  if (loading) {
+  if (loading && !data) {
     return (
       <div className="flex items-center gap-3 rounded-xl border border-border bg-card p-3.5">
         <Loader2 className="size-4 animate-spin text-primary" />
@@ -55,7 +34,7 @@ export function NetworkingInsightPanel({ refreshKey }: Props) {
     );
   }
 
-  if (source === "kosong" || !data) return null;
+  if (fetched && source === "kosong") return null;
 
   return (
     <div className="overflow-hidden rounded-xl border border-primary/25 bg-gradient-to-br from-primary/8 via-card to-card shadow-sm">
@@ -82,12 +61,12 @@ export function NetworkingInsightPanel({ refreshKey }: Props) {
               </Badge>
             )}
           </p>
-          <p className="truncate text-[10px] text-muted-foreground">{data.ringkasan}</p>
+          <p className="truncate text-[10px] text-muted-foreground">{data?.ringkasan ?? "Klik untuk menganalisa"}</p>
         </div>
       </div>
 
       {/* Isi */}
-      {!collapsed && (
+      {!collapsed && data && (
         <div className="space-y-2.5 px-4 pb-4">
           {/* Analisa jaringan */}
           <div className="flex items-start gap-2 rounded-lg bg-primary/5 p-3">

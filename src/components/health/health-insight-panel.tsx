@@ -14,38 +14,17 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { HealthInsight } from "@/lib/ai/health-insight";
 
+import { useInsightPanel } from "@/lib/hooks/use-insight-panel";
 interface Props {
   refreshKey: number;
 }
 
 /** Panel analisa kesehatan AI — tren, kebiasaan buruk, rekomendasi (HLT-04/05/06). Collapsible. */
 export function HealthInsightPanel({ refreshKey }: Props) {
-  const [data, setData] = React.useState<HealthInsight | null>(null);
-  const [source, setSource] = React.useState<"ai" | "heuristik" | "kosong" | null>(null);
-  const [loading, setLoading] = React.useState(true);
-  const [collapsed, setCollapsed] = React.useState(true);
+  const { data, source, loading, collapsed, setCollapsed, fetched } =
+    useInsightPanel<HealthInsight>("/api/health/analyze", refreshKey, true);
 
-  React.useEffect(() => {
-    let cancelled = false;
-    fetch("/api/health/analyze", { method: "POST" })
-      .then((r) => r.json())
-      .then((json) => {
-        if (cancelled) return;
-        if (json.ok) {
-          setData(json.data ?? null);
-          setSource(json.source ?? null);
-        }
-      })
-      .catch(() => {})
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [refreshKey]);
-
-  if (loading) {
+  if (loading && !data) {
     return (
       <div className="flex items-center gap-3 rounded-xl border border-border bg-card p-3.5">
         <Loader2 className="size-4 animate-spin text-emerald-600" />
@@ -54,7 +33,7 @@ export function HealthInsightPanel({ refreshKey }: Props) {
     );
   }
 
-  if (source === "kosong" || !data) return null;
+  if (fetched && source === "kosong") return null;
 
   return (
     <div className="overflow-hidden rounded-xl border border-emerald-500/25 bg-gradient-to-br from-emerald-500/8 via-card to-card shadow-sm">
@@ -81,12 +60,12 @@ export function HealthInsightPanel({ refreshKey }: Props) {
               </Badge>
             )}
           </p>
-          <p className="truncate text-[10px] text-muted-foreground">{data.ringkasan}</p>
+          <p className="truncate text-[10px] text-muted-foreground">{data?.ringkasan ?? "Klik untuk menganalisa"}</p>
         </div>
       </div>
 
       {/* Isi */}
-      {!collapsed && (
+      {!collapsed && data && (
         <div className="grid gap-3 px-4 pb-4 md:grid-cols-3">
           {/* Tren */}
           <div className="rounded-lg border border-border/70 bg-background/60 p-3">
