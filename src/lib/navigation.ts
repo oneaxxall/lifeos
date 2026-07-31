@@ -4,6 +4,7 @@ import {
   CheckSquare,
   Clock,
   DatabaseBackup,
+  Flame,
   Handshake,
   HeartPulse,
   Home,
@@ -48,6 +49,7 @@ export const navGroups: NavGroup[] = [
       { title: "Health", href: "/health", icon: HeartPulse, description: "Kesehatan fisik" },
       { title: "Mental", href: "/mental", icon: Brain, description: "Kesehatan mental" },
       { title: "Sick", href: "/sick", icon: Stethoscope, description: "Catatan tidak enak badan" },
+      { title: "Bad Habit", href: "/habits", icon: Flame, description: "Kurangi kebiasaan buruk" },
     ],
   },
   {

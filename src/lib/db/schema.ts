@@ -456,6 +456,51 @@ export const insights = sqliteTable("insights", {
     .default(sql`(datetime('now'))`),
 });
 
+/* ═══════════ Bad Habit Tracker ═══════════ */
+
+export const badHabits = sqliteTable("bad_habits", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  /** Nama kebiasaan buruk (mis. "Scrolling sosmed") */
+  name: text("name").notNull(),
+  /** Kategori: digital | konsumsi | fisik | lainnya */
+  category: text("category").notNull().default("digital"),
+  /** Target pengurangan (teks bebas) */
+  targetText: text("target_text").default(""),
+  /** Alasan ingin berhenti — diingatkan AI saat lemah */
+  alasan: text("alasan").default(""),
+  /** Target kambuh maksimal per minggu (untuk progres bertahap) */
+  weeklyTarget: integer("weekly_target").default(0),
+  /** Aktif / diarsipkan */
+  active: integer("active", { mode: "boolean" }).notNull().default(true),
+  /** Hasil analisa AI terakhir (JSON) — disimpan agar tidak di-generate ulang */
+  lastAnalysis: text("last_analysis").default(""),
+  /** Source analisa terakhir: ai | heuristik */
+  lastAnalysisSource: text("last_analysis_source").default(""),
+  /** Waktu analisa terakhir (ISO) */
+  lastAnalyzedAt: text("last_analyzed_at").default(""),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+});
+
+export const habitLogs = sqliteTable("habit_logs", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  habitId: integer("habit_id")
+    .notNull()
+    .references(() => badHabits.id, { onDelete: "cascade" }),
+  /** Tanggal check-in (YYYY-MM-DD) — upsert per habit+tanggal */
+  date: text("date").notNull(),
+  /** bersih = tidak kambuh, kambuh = terulang */
+  status: text("status", { enum: ["bersih", "kambuh"] }).notNull(),
+  /** Berapa kali kambuh di hari itu (jika kambuh) */
+  jumlahKambuh: integer("jumlah_kambuh").notNull().default(1),
+  /** Catatan pemicu (opsional) */
+  catatan: text("catatan").default(""),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+});
+
 /* ═══════════ Insight Feedback (AI belajar) ═══════════ */
 
 export const insightFeedback = sqliteTable("insight_feedback", {
@@ -513,3 +558,5 @@ export type TeamMember = typeof teamMembers.$inferSelect;
 export type TeamOneOnOne = typeof teamOneOnOnes.$inferSelect;
 export type TeamFeedback = typeof teamFeedback.$inferSelect;
 export type Insight = typeof insights.$inferSelect;
+export type BadHabit = typeof badHabits.$inferSelect;
+export type HabitLog = typeof habitLogs.$inferSelect;
