@@ -10,26 +10,35 @@ LifeOS adalah aplikasi web pribadi (self-hosted) yang dibangun di atas **Next.js
 
 | # | Fitur | Deskripsi |
 |---|-------|-----------|
-| 1 | **Knowledge** | Second brain: catatan kaya (rich text editor), kategori & tag, pencarian, memori AI |
-| 2 | **Todo** | Kanban drag & drop (backlog → done), prioritas AI harian, pecah tugas besar, deteksi penundaan |
-| 3 | **Finance** | Transaksi masuk/keluar, kategori, ringkasan bulanan + chart, subscription tracker, budget per kategori, analisa pemborosan AI |
-| 4 | **Time** | Timer aktivitas, blok waktu, kategori (produktif/netral/buang), insight penggunaan waktu AI |
-| 5 | **Health** | Entri kesehatan harian, target, tren, insight AI |
-| 6 | **Mental** | Mood tracker, jurnal, deteksi sinyal butuh dukungan |
-| 7 | **Sick** | Catatan tidak enak badan, saran AI |
-| 8 | **Family** | Curhatan/jurnal keluarga + AI penasehat (empati & langkah kecil; topik sensitif → saran keselamatan) |
-| 9 | **Spiritual** | Ritual harian (sholat/quran/dzikir/doa), streak, target khatam, refleksi |
-| 10 | **Business** | Ide & proyek bisnis, tahapan (Riset→MVP→Luncur→Tumbuh), rencana eksekusi 30 hari → Todo, prioritas AI |
-| 11 | **Networking** | Kontak & relasi profesional, follow-up > 90 hari, saran pesan AI, saran mingguan |
-| 12 | **Team** | Anggota tim, catatan 1-on-1, deteksi dini AI (anggota lama tanpa sesi), persiapan meeting |
-| 13 | **Insights** | ❤️ Jantung LifeOS: brief harian AI, laporan mingguan + korelasi lintas fitur, tanya jawab natural ("Berapa pengeluaranku bulan ini?") |
-| 14 | **Backup & Restore** | Ekspor seluruh data ke file JSON, backup otomatis lokal, restore sekali klik |
+| 1 | **Dashboard** | Beranda: greeting dinamis per jam, Quote of the Day (slider auto-rotate + generate per hari via AI), statistik & sisa uang bulan ini, recent activity lintas fitur |
+| 2 | **Knowledge** | Second brain: catatan kaya (rich text editor), kategori & tag, pencarian, memori AI |
+| 3 | **Todo** | Kanban drag & drop (backlog → done), filter pencarian/prioritas/area/jatuh tempo, prioritas AI harian, pecah tugas besar, deteksi penundaan |
+| 4 | **Finance** | Transaksi masuk/keluar, kategori, ringkasan bulanan + chart, subscription tracker, budget per kategori, analisa pemborosan AI |
+| 5 | **Time** | Timer aktivitas, blok waktu, kategori (produktif/netral/buang), insight penggunaan waktu AI |
+| 6 | **Activity** | Pencatatan aktivitas manual (deskripsi, start/end, kategori, tags), dashboard ringkasan, filter riwayat |
+| 7 | **Pomodoro** | Timer fokus/istirahat (persistent via localStorage, break auto-start), suara Web Audio, statistik harian, **Picture-in-Picture** (kartu identik + theme-aware) |
+| 8 | **Financial Planning** | Perencanaan keuangan: **FIRE calculator** (rule of 25, alokasi saham/obligasi/deposito), dana sekolah anak (inflasi pendidikan), tabungan darurat — profil asumsi tersimpan |
+| 9 | **Stocks** | **Portofolio** (tampilan Stockbit Complete View: Code/Lot, Invested/Avg, Market/Current, P&L/Gain — input harga seamless), **Avg Down/Up**, **Right Issue (HMETD)**, Lot & Fee, rencana tersimpan per kode saham |
+| 10 | **Hutang & Piutang** | Utang-piutang 2 arah, mode **1x bayar / cicilan (anti riba — total auto = per-cicilan × jumlah, tanpa bunga)**, status otomatis (belum/sebagian/lunas), jatuh tempo, aksi bayar/terima |
+| 11 | **Health** | Entri kesehatan harian, target, tren, insight AI |
+| 12 | **Mental** | Mood tracker, jurnal, deteksi sinyal butuh dukungan |
+| 13 | **Sick** | Catatan tidak enak badan, saran AI |
+| 14 | **Family** | Curhatan/jurnal keluarga + AI penasehat (empati & langkah kecil; topik sensitif → saran keselamatan) |
+| 15 | **Life Story** | 🌳 Pohon kehidupan: biodata (tanggal lahir, nilai, luka masa kecil, pola asuh) → **timeline per stage usia** (zigzag, fase & bulan-tahun per stage) → cerita per stage (RichText) + **AI Teman Curhat** (halaman terpisah, streaming token, riwayat tersimpan per stage) |
+| 16 | **Spiritual** | Ritual harian (sholat/quran/dzikir/doa), streak, target khatam, refleksi |
+| 17 | **Business** | Ide & proyek bisnis, tahapan (Riset→MVP→Luncur→Tumbuh), rencana eksekusi 30 hari → Todo, prioritas AI |
+| 18 | **Networking** | Kontak & relasi profesional, follow-up > 90 hari, saran pesan AI, saran mingguan |
+| 19 | **Team** | Anggota tim, catatan 1-on-1, deteksi dini AI (anggota lama tanpa sesi), persiapan meeting |
+| 20 | **Insights** | ❤️ Jantung LifeOS: brief harian AI, laporan mingguan + korelasi lintas fitur, tanya jawab natural ("Berapa pengeluaranku bulan ini?") |
+| 21 | **Backup & Restore** | Ekspor seluruh data ke file JSON, backup otomatis lokal, restore sekali klik |
 
 **Plus:**
 - 🎨 UI cantik (shadcn/ui) — terang & gelap, responsif mobile, font Literata untuk bacaan
 - 📱 **PWA installable** — bisa "Install App" dari browser (Android/iOS/desktop)
 - 🔐 **Login** — proteksi dengan username/password dari `.env` (tanpa database)
 - 🤖 Panel AI **collapsible + lazy load** — AI hanya dipanggil saat Anda membukanya (hemat biaya)
+- 💰 **RupiahInput** — komponen input rupiah dengan format titik ribuan otomatis (dipakai di semua fitur keuangan)
+- 🗂️ **Menu berkelompok** — Produktivitas (Todo/Time/Activity/Pomodoro) & Keuangan (Finance/Financial Planning/Stocks/Hutang & Piutang)
 
 ---
 
@@ -173,6 +182,9 @@ Halaman login menampilkan **slider preview fitur + quotes motivasi** di sisi kan
 - **Server-side**: semua panggilan AI terjadi di API routes (`src/app/api/**`) — kunci API tidak pernah terekspos ke browser
 - **Provider-agnostic**: ganti provider cukup edit `.env.local` (`src/lib/ai/provider.ts`)
 - **Lazy & cache**: panel AI hanya memanggil LLM saat Anda **membuka panel** (klik chevron), hasilnya di-cache 15 menit — membuka menu tidak menghabiskan biaya
+- **Streaming token**: AI Teman Curhat menampilkan balasan **token real-time** (chunk per chunk) — teks muncul mengetik, bukan loading diam
+- **Konteks personal**: Life Story & AI curhat membaca **profil hidup** (nilai, luka masa kecil, pola asuh) + cerita per stage sebagai konteks balasan
+- **Riwayat tersimpan**: percakapan curhat disimpan per stage usia di SQLite — bisa dilanjutkan kapan saja
 - **Fallback heuristik**: jika API key kosong/gagal, hasilnya tetap muncul (berbasis aturan lokal) dengan label sumber
 
 ---
@@ -181,7 +193,7 @@ Halaman login menampilkan **slider preview fitur + quotes motivasi** di sisi kan
 
 Halaman **Backup** (`/backup`) menyediakan:
 
-- **Buat backup** — snapshot seluruh data (30 tabel) disimpan ke `data/backups/`
+- **Buat backup** — snapshot seluruh data (42 tabel) disimpan ke `data/backups/`
 - **Unduh JSON** — ekspor manual untuk disimpan di tempat lain
 - **Restore** — upload file JSON backup atau pilih dari riwayat lokal; seluruh data diganti dalam **satu transaksi** (aman — rollback otomatis jika gagal)
 - **Riwayat** — daftar backup lokal dengan ukuran & tanggal, bisa dihapus
@@ -206,7 +218,7 @@ smt-lifeos/
 │   │   ├── ai/                 # Provider, prompt builder, insight per fitur
 │   │   └── auth.ts / auth-edge.ts  # Login & verifikasi session
 │   ├── proxy.ts                # Middleware proteksi halaman (Next 16.2)
-├── drizzle/                    # Migrasi SQL (0000–0015+)
+├── drizzle/                    # Migrasi SQL (0000–0027, 42 tabel)
 ├── public/
 │   ├── icons/                  # Ikon PWA (192/512/maskable/apple-touch)
 │   └── sw.js                   # Service worker
@@ -224,6 +236,10 @@ smt-lifeos/
 - **Client-safe**: logika yang dipakai komponen client dipisah ke file khusus (tanpa import server/db)
 - **Key-remount**: form di-reset via `key` prop (hindari lint set-state-in-effect)
 - **Tanpa `window.confirm`**: semua konfirmasi pakai `AlertDialog` (shadcn); alert sukses pakai `sonner`
+- **RupiahInput** (`src/components/ui/rupiah-input.tsx`): input rupiah dengan format titik ribuan otomatis — value tetap angka murni, mode `ghost` untuk inline-edit seamless (dipakai harga saham)
+- **RichTextEditor** (`src/components/ui/rich-text-editor.tsx`): editor Quill reusable; konten HTML **wajib** lewat `sanitizeHtml()` sebelum render
+- **Streaming API**: route chat mengembalikan `ReadableStream` (text/plain) — client baca `response.body.getReader()` untuk token real-time
+- **Keyboard-aware mobile**: `interactiveWidget: resizes-content` + hook `visualViewport` agar input chat tidak tertutup keyboard
 
 ---
 

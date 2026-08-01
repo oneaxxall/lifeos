@@ -20,38 +20,19 @@ export interface BackupFile {
   createdAt: string;
 }
 
-const APP_TABLES = [
-  "knowledge",
-  "categories",
-  "tags",
-  "knowledge_categories",
-  "knowledge_tags",
-  "embeddings",
-  "todos",
-  "finance_categories",
-  "finance_transactions",
-  "subscriptions",
-  "budgets",
-  "activity_categories",
-  "activities",
-  "time_blocks",
-  "health_entries",
-  "health_goals",
-  "mood_entries",
-  "journal_entries",
-  "sick_entries",
-  "family_entries",
-  "spiritual_entries",
-  "spiritual_goals",
-  "business_ideas",
-  "business_projects",
-  "contacts",
-  "team_members",
-  "team_one_on_ones",
-  "team_feedback",
-  "insights",
-  "insight_feedback",
-];
+/**
+ * Daftar tabel aplikasi — DINAMIS dari sqlite_master.
+ * Otomatis mencakup semua tabel sekarang & masa depan (tidak perlu update manual
+ * saat fitur baru menambah tabel). Mengecualikan tabel sistem & meta migrasi.
+ */
+export function getAppTables(): string[] {
+  const rows = sqlite
+    .prepare(
+      `SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' AND name != '__drizzle_migrations' ORDER BY name`
+    )
+    .all() as { name: string }[];
+  return rows.map((r) => r.name);
+}
 
 function ensureDir(): void {
   if (!fs.existsSync(BACKUP_DIR)) fs.mkdirSync(BACKUP_DIR, { recursive: true });
@@ -61,7 +42,7 @@ function ensureDir(): void {
 export function getBackupStats(): { tables: BackupStatsRow[]; total: number } {
   const tables: BackupStatsRow[] = [];
   let total = 0;
-  for (const table of APP_TABLES) {
+  for (const table of getAppTables()) {
     try {
       const row = sqlite
         .prepare(`SELECT COUNT(*) AS c FROM "${table}"`)
@@ -78,7 +59,7 @@ export function getBackupStats(): { tables: BackupStatsRow[]; total: number } {
 /** Dump semua tabel ke objek JSON. */
 export function dumpAllTables(): Record<string, unknown[]> {
   const data: Record<string, unknown[]> = {};
-  for (const table of APP_TABLES) {
+  for (const table of getAppTables()) {
     try {
       data[table] = sqlite.prepare(`SELECT * FROM "${table}"`).all();
     } catch {
@@ -146,7 +127,7 @@ export function restoreFromPayload(
 ): { ok: boolean; tablesRestored: number; rowsRestored: number; error?: string } {
   const run = sqlite.transaction(() => {
     // 1. Kosongkan semua tabel (dari list saat ini — tidak hanya yang ada di payload)
-    for (const table of APP_TABLES) {
+    for (const table of getAppTables()) {
       try {
         sqlite.prepare(`DELETE FROM "${table}"`).run();
       } catch {
@@ -162,7 +143,7 @@ export function restoreFromPayload(
 
     // 2. Isi ulang dari payload (hanya tabel yang dikenal + valid)
     let rowsRestored = 0;
-    for (const table of APP_TABLES) {
+    for (const table of getAppTables()) {
       const rows = payload[table];
       if (!Array.isArray(rows) || rows.length === 0) continue;
       const first = rows[0] as Record<string, unknown>;
@@ -183,7 +164,15 @@ export function restoreFromPayload(
   });
 
   try {
-    const rowsRestored = run();
+    // FK harus OFF di LUAR transaksi (PRAGMA tidak bisa berubah di dalam transaksi)
+    // → DELETE parent/child urutan apa pun aman, konsistensi dijaga oleh payload
+    sqlite.pragma("foreign_keys = OFF");
+    let rowsRestored: number;
+    try {
+      rowsRestored = run();
+    } finally {
+      sqlite.pragma("foreign_keys = ON");
+    }
     return { ok: true, tablesRestored: Object.keys(payload).length, rowsRestored };
   } catch (e) {
     return {
