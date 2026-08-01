@@ -505,6 +505,30 @@ export const habitLogs = sqliteTable("habit_logs", {
     .default(sql`(datetime('now'))`),
 });
 
+/* ═══════════ Resep Makanan (Food — AI generate gizi) ═══════════ */
+
+export const foodRecipes = sqliteTable("food_recipes", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  /** Judul resep */
+  title: text("title").notNull(),
+  /** Permintaan awal user (prompt) */
+  request: text("request").default(""),
+  /** Hasil resep dari AI (JSON: bahan, langkah, gizi, vitamin, manfaat) */
+  recipe: text("recipe").notNull(),
+  createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
+});
+
+/* ═══════════ Program Latihan (Exercise — AI training program) ═══════════ */
+
+export const exercisePrograms = sqliteTable("exercise_programs", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  /** Tujuan user (mis. "Saya ingin memperbesar lengan saya") */
+  goal: text("goal").notNull(),
+  /** Hasil program dari AI (JSON: makanan, olahraga, gerakan, diet, istirahat) */
+  program: text("program").notNull(),
+  createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
+});
+
 /* ═══════════ Insight Cache (hasil analisa AI — persist SQLite) ═══════════ */
 
 export const insightCache = sqliteTable("insight_cache", {
