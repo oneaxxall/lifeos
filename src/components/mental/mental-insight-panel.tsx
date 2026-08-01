@@ -73,7 +73,7 @@ export function MentalInsightPanel({ refreshKey }: Props) {
       {/* Isi */}
       {!collapsed && data && (
         <div className="space-y-3 px-4 pb-4">
-          <div className="grid gap-3 md:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             {/* Pola mood */}
             <div className="rounded-lg border border-border/70 bg-background/60 p-3">
               <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-violet-600 dark:text-violet-400">

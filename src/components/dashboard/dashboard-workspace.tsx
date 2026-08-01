@@ -169,7 +169,7 @@ export function DashboardWorkspace() {
       ) : (
         <>
           {/* ===== Grid statistik ===== */}
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <div className="grid grid-cols-1 grid-cols-2 gap-3 lg:grid-cols-4">
             {/* Todo */}
             <Link
               href="/todo"
@@ -256,7 +256,7 @@ export function DashboardWorkspace() {
           </div>
 
           {/* ===== Health singkat + Quick action ===== */}
-          <div className="grid gap-3 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
             {s?.todayHealth && (
               <div className="flex items-center gap-3 rounded-xl border border-border bg-card p-4 shadow-sm lg:col-span-1">
                 <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-rose-500/15">

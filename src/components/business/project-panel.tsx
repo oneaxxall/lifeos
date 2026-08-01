@@ -135,7 +135,7 @@ export function ProjectPanel({ items, onChanged }: Props) {
       {showForm && (
         <div className="mb-3 space-y-2 rounded-lg border border-border/60 p-3">
           <Input placeholder="Nama proyek… (mis. LifeOS Pro)" value={name} onChange={(e) => setName(e.target.value)} className="h-9 text-sm" />
-          <div className="grid gap-2 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
             <Select value={stage} onValueChange={setStage}>
               <SelectTrigger className="h-9 text-sm">
                 <SelectValue />

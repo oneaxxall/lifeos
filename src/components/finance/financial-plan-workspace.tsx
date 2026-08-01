@@ -305,7 +305,7 @@ export function FinancialPlanWorkspace() {
               <p className="mb-3 flex items-center gap-2 text-sm font-semibold">
                 <PiggyBank className="size-4 text-rose-500" /> FIRE — Financial Independence, Retire Early
               </p>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <div className="grid grid-cols-1 grid-cols-2 gap-3 sm:grid-cols-4">
                 <div>
                   <p className="text-[10px] text-muted-foreground">Target FIRE</p>
                   <p className="mt-1 text-lg font-bold">{fmtRp(r.fireTargetNow)}</p>
@@ -390,7 +390,7 @@ export function FinancialPlanWorkspace() {
               <p className="mb-3 flex items-center gap-2 text-sm font-semibold">
                 <GraduationCap className="size-4 text-indigo-500" /> Dana sekolah anak
               </p>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+              <div className="grid grid-cols-1 grid-cols-2 gap-3 sm:grid-cols-3">
                 <div>
                   <p className="text-[10px] text-muted-foreground">Sisa waktu</p>
                   <p className="mt-1 text-lg font-bold">{r.schoolYearsLeft} tahun</p>

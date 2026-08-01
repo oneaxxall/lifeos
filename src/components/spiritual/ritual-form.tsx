@@ -80,7 +80,7 @@ export function RitualForm({ todayEntry, stats, onSaved }: Props) {
         <Badge done={doneCount} total={SPIRITUAL_RITUALS.length} />
       </div>
 
-      <div className="grid gap-2 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
         {SPIRITUAL_RITUALS.map((r) => {
           const active = !!rituals[r.key];
           return (
@@ -110,7 +110,7 @@ export function RitualForm({ todayEntry, stats, onSaved }: Props) {
       </div>
 
       {/* Kualitas + refleksi */}
-      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+      <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div className="space-y-1.5">
           <p className="text-[11px] font-medium text-muted-foreground">
             Kualitas ibadah hari ini (opsional)

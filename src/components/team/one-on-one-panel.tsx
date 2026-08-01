@@ -104,7 +104,7 @@ export function OneOnOnePanel({ members, onones, selectedId, onChanged }: Props)
 
       {showForm && (
         <div className="mb-3 space-y-2 rounded-lg border border-border/60 p-3">
-          <div className="grid gap-2 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             <select
               value={effectiveMemberId ?? ""}
               onChange={(e) => setMemberId(e.target.value ? Number(e.target.value) : null)}

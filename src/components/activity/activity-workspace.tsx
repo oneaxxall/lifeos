@@ -66,7 +66,7 @@ export function ActivityWorkspace() {
           <p className="text-sm text-muted-foreground">Memuat…</p>
         </div>
       ) : (
-        <div className="grid gap-5 lg:grid-cols-[340px_1fr]">
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-[340px_1fr]">
           {/* Form pencatatan manual */}
           <div className="lg:sticky lg:top-20 lg:self-start">
             <ActivityManualForm categories={categories} onSaved={handleChanged} />

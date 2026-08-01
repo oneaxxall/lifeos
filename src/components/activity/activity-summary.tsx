@@ -72,7 +72,7 @@ export function ActivitySummary({ activities }: Props) {
         <BarChart3 className="size-4 text-indigo-500" /> Ringkasan aktivitas
       </p>
 
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+      <div className="grid grid-cols-1 grid-cols-2 gap-2 sm:grid-cols-4">
         {/* Hari ini */}
         <div className="rounded-lg border border-border/60 bg-muted/20 p-2.5">
           <p className="flex items-center gap-1 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">

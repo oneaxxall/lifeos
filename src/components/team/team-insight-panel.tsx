@@ -73,7 +73,7 @@ export function TeamInsightPanel({ refreshKey }: Props) {
             <p className="text-xs leading-relaxed font-medium">{data.ringkasanTim}</p>
           </div>
 
-          <div className="grid gap-2.5 md:grid-cols-2">
+          <div className="grid grid-cols-1 gap-2.5 md:grid-cols-2">
             {/* Deteksi dini */}
             <div className="rounded-lg border border-border/70 bg-background/60 p-3">
               <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-amber-600 dark:text-amber-400">

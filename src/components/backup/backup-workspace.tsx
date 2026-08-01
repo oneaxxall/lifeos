@@ -192,7 +192,7 @@ export function BackupWorkspace() {
   return (
     <div className="space-y-5">
       {/* Ringkasan */}
-      <div className="grid gap-3 md:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
         <div className="rounded-xl border border-primary/20 bg-gradient-to-br from-primary/8 via-card to-card p-4 shadow-sm">
           <div className="flex items-center gap-2 text-xs font-semibold text-primary">
             <DatabaseBackup className="size-4" /> Tabel tercadangkan
@@ -213,7 +213,7 @@ export function BackupWorkspace() {
         </div>
       </div>
 
-      <div className="grid gap-5 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
         {/* Backup */}
         <div className="rounded-xl border border-border bg-card shadow-sm">
           <div className="border-b border-border px-4 py-3">

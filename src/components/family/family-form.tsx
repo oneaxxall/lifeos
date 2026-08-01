@@ -1,17 +1,10 @@
 "use client";
 
 import * as React from "react";
-import { HeartHandshake, Loader2, MessageCircleHeart, Users } from "lucide-react";
+import { HeartHandshake, Loader2, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -19,6 +12,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import type { FamilyAdvice } from "@/lib/ai/family-advice";
 
 interface Props {
@@ -26,7 +20,15 @@ interface Props {
 }
 
 const PEOPLE_OPTIONS = ["Pasangan", "Anak", "Orang tua", "Mertua", "Saudara", "Mertua & keluarga besar"];
-const MOOD_OPTIONS = ["Tenang", "Cemas", "Lelah", "Kesal", "Sedih", "Bersyukur", "Campur aduk"];
+const MOOD_EMOJI = [
+  { label: "Tenang", emoji: "😌" },
+  { label: "Cemas", emoji: "😟" },
+  { label: "Lelah", emoji: "😮‍💨" },
+  { label: "Kesal", emoji: "😤" },
+  { label: "Sedih", emoji: "😢" },
+  { label: "Bersyukur", emoji: "🙏" },
+  { label: "Campur aduk", emoji: "🥴" },
+];
 
 /** Form curhatan keluarga — tulis keresahan, AI menasehati, hasil di modal. */
 export function FamilyForm({ onSaved }: Props) {
@@ -67,67 +69,85 @@ export function FamilyForm({ onSaved }: Props) {
 
   return (
     <>
-      <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
-        <p className="mb-3 flex items-center gap-2 text-sm font-semibold">
-          <MessageCircleHeart className="size-4 text-rose-500" />
-          Curhat keluarga
-          <span className="text-[10px] font-normal text-muted-foreground">
-            (ruang aman — hanya kamu & AI yang membaca)
-          </span>
-        </p>
-
-        <div className="space-y-3">
+      <div className="p-4">
+        <div className="space-y-4">
+          {/* Cerita */}
           <div className="space-y-1.5">
-            <p className="text-xs font-medium text-muted-foreground">
-              Ada apa? Ceritakan apa adanya. <span className="text-destructive">*</span>
-            </p>
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-medium text-muted-foreground">
+                Ada apa? Ceritakan apa adanya. <span className="text-destructive">*</span>
+              </p>
+              <span className="text-[10px] tabular-nums text-muted-foreground/60">
+                {content.length.toLocaleString("id-ID")} karakter
+              </span>
+            </div>
             <Textarea
               placeholder="mis. Belakangan sering beda pendapat dengan pasangan soal pola asuh anak, rasanya capek sendiri…"
-              rows={4}
+              rows={5}
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              className="resize-none"
+              className="resize-none text-sm leading-relaxed"
             />
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="space-y-1.5">
-              <p className="text-xs font-medium text-muted-foreground">Terlibat dengan siapa?</p>
-              <Select value={people} onValueChange={setPeople}>
-                <SelectTrigger className="h-9 text-sm">
-                  <SelectValue placeholder="Pilih (opsional)" />
-                </SelectTrigger>
-                <SelectContent>
-                  {PEOPLE_OPTIONS.map((p) => (
-                    <SelectItem key={p} value={p} className="text-sm">
-                      {p}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <p className="text-xs font-medium text-muted-foreground">Suasana hati</p>
-              <Select value={mood} onValueChange={setMood}>
-                <SelectTrigger className="h-9 text-sm">
-                  <SelectValue placeholder="Pilih (opsional)" />
-                </SelectTrigger>
-                <SelectContent>
-                  {MOOD_OPTIONS.map((m) => (
-                    <SelectItem key={m} value={m} className="text-sm">
-                      {m}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          {/* Terlibat dengan siapa — chips */}
+          <div className="space-y-1.5">
+            <p className="text-xs font-medium text-muted-foreground">
+              Terlibat dengan siapa? <span className="font-normal text-muted-foreground/50">(opsional)</span>
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {PEOPLE_OPTIONS.map((p) => (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => setPeople(people === p ? "" : p)}
+                  className={cn(
+                    "rounded-full border px-3 py-1.5 text-[11px] font-medium transition-colors",
+                    people === p
+                      ? "border-rose-500/50 bg-rose-500/10 text-rose-500"
+                      : "border-border text-muted-foreground hover:bg-muted/40"
+                  )}
+                >
+                  {p}
+                </button>
+              ))}
             </div>
           </div>
 
-          <div className="flex items-center justify-between">
-            <p className="max-w-[55%] text-[10px] leading-relaxed text-muted-foreground/70">
+          {/* Suasana hati — chips emoji */}
+          <div className="space-y-1.5">
+            <p className="text-xs font-medium text-muted-foreground">
+              Suasana hati <span className="font-normal text-muted-foreground/50">(opsional)</span>
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {MOOD_EMOJI.map(({ label, emoji }) => (
+                <button
+                  key={label}
+                  type="button"
+                  onClick={() => setMood(mood === label ? "" : label)}
+                  className={cn(
+                    "rounded-full border px-3 py-1.5 text-[11px] font-medium transition-colors",
+                    mood === label
+                      ? "border-rose-500/50 bg-rose-500/10 text-rose-500"
+                      : "border-border text-muted-foreground hover:bg-muted/40"
+                  )}
+                >
+                  {emoji} {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Footer: disclaimer + tombol submit */}
+          <div className="flex flex-col gap-2.5 border-t border-border/50 pt-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-[10px] leading-relaxed text-muted-foreground/70">
               AI memberi perspektif & dukungan, bukan pengganti konseling keluarga jika dibutuhkan.
             </p>
-            <Button onClick={() => void analyze()} disabled={analyzing} className="gap-2">
+            <Button
+              onClick={() => void analyze()}
+              disabled={analyzing}
+              className="h-10 shrink-0 gap-2 sm:min-w-[180px]"
+            >
               {analyzing ? (
                 <>
                   <Loader2 className="size-4 animate-spin" /> Mendengarkan…

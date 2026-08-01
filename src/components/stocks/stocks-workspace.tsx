@@ -221,7 +221,7 @@ export function StocksWorkspace() {
             </Card>
 
             <Card title="Hasil" icon={BarChart3}>
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+              <div className="grid grid-cols-1 grid-cols-2 gap-2 sm:grid-cols-3">
                 <Stat label="Total posisi" value={`${(avgR.totalShares / LOT_SIZE).toLocaleString("id-ID")} lot`} sub={`${avgR.totalShares.toLocaleString("id-ID")} lembar`} />
                 <Stat label="Total modal" value={fmtRp(avgR.totalCost)} sub="beli lama + baru" />
                 <Stat
@@ -288,7 +288,7 @@ export function StocksWorkspace() {
             </Card>
 
             <Card title="Hasil" icon={BarChart3}>
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+              <div className="grid grid-cols-1 grid-cols-2 gap-2 sm:grid-cols-3">
                 <Stat label="Hak right kamu" value={`${riR.rights.toLocaleString("id-ID")} lbr`} className="text-primary" sub={`dari ${(ri.sharesOwned / LOT_SIZE).toLocaleString("id-ID")} lot`} />
                 <Stat label="Harga teoritis (TERP)" value={fmtRp(riR.terp)} sub="harga ex-right setelah penyesuaian" />
                 <Stat label="Nilai per right" value={fmtRp(riR.rightValue)} className="text-emerald-500" sub="premi right yang bisa dijual" />
@@ -338,7 +338,7 @@ export function StocksWorkspace() {
             </Card>
 
             <Card title="Hasil" icon={BarChart3}>
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+              <div className="grid grid-cols-1 grid-cols-2 gap-2 sm:grid-cols-3">
                 <Stat label="Total lembar" value={`${lfR.shares.toLocaleString("id-ID")} lbr`} sub={`${lf.lot} lot × 100`} />
                 <Stat label="Nilai beli" value={fmtRp(lfR.buyValue)} sub={`fee ${fmtRp(lfR.buyFee)}`} />
                 <Stat label="Nilai jual" value={fmtRp(lfR.sellValue)} sub={`fee ${fmtRp(lfR.sellFee)} + pajak ${fmtRp(lfR.taxSell)}`} />

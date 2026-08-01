@@ -154,7 +154,7 @@ export function KnowledgeEditorDialog({
             minHeight={300}
           />
 
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {/* Kategori — multi-select dengan saran */}
             <div className="space-y-1.5">
               <p className="text-xs font-medium text-muted-foreground">

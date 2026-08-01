@@ -71,7 +71,7 @@ export function MentalWorkspace() {
 
       <MoodForm onSaved={handleChanged} />
 
-      <div className="grid gap-4 xl:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
         <JournalPanel journals={journals} onChanged={handleChanged} />
         <MoodTrends moods={moods} onChanged={handleChanged} />
       </div>

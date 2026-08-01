@@ -1,14 +1,17 @@
 "use client";
 
 import * as React from "react";
+import { ChevronDown, HeartHandshake } from "lucide-react";
 import { toast } from "sonner";
 import { FamilyForm } from "@/components/family/family-form";
 import { FamilyList, type FamilyItem } from "@/components/family/family-list";
+import { cn } from "@/lib/utils";
 
 /** Orchestrator Family — state, fetch, compose komponen. */
 export function FamilyWorkspace() {
   const [items, setItems] = React.useState<FamilyItem[]>([]);
   const [loading, setLoading] = React.useState(true);
+  const [formOpen, setFormOpen] = React.useState(false);
 
   const loadAll = React.useCallback(async () => {
     try {
@@ -52,7 +55,36 @@ export function FamilyWorkspace() {
 
   return (
     <div className="space-y-5">
-      <FamilyForm onSaved={() => void loadAll()} />
+      {/* ── Toggle form curhat — default tertutup ── */}
+      <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+        <button
+          onClick={() => setFormOpen((o) => !o)}
+          className="flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-muted/20"
+          aria-expanded={formOpen}
+        >
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-rose-500/10 text-rose-500">
+            <HeartHandshake className="size-4.5" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-semibold">Curhat keluarga</span>
+            <span className="block text-[11px] text-muted-foreground">
+              Ruang aman — hanya kamu & AI yang membaca 💛
+            </span>
+          </span>
+          <ChevronDown
+            className={cn(
+              "size-4 shrink-0 text-muted-foreground transition-transform duration-200",
+              formOpen && "rotate-180"
+            )}
+          />
+        </button>
+        {formOpen && (
+          <div className="border-t border-border/60">
+            <FamilyForm onSaved={() => void loadAll()} />
+          </div>
+        )}
+      </div>
+
       <FamilyList items={items} onChanged={() => void loadAll()} />
     </div>
   );

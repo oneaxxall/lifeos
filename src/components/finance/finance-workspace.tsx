@@ -153,7 +153,7 @@ export function FinanceWorkspace() {
 
           <MonthlySummary data={summary} />
 
-          <div className="grid gap-4 xl:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
             <SubscriptionsPanel
               subscriptions={subscriptions}
               monthlyTotal={monthlyTotal}

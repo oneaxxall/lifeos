@@ -56,7 +56,7 @@ export function SpiritualGoalsPanel({ goal, onChanged }: Props) {
       </div>
 
       {editing ? (
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div className="space-y-1.5">
             <p className="text-[11px] font-medium text-muted-foreground">Target khatam Quran (juz)</p>
             <Input type="number" min={1} max={30} placeholder="30" value={juz} onChange={(e) => setJuz(e.target.value)} className="h-9 text-sm" />
@@ -76,7 +76,7 @@ export function SpiritualGoalsPanel({ goal, onChanged }: Props) {
           Atur target khatam Quran atau target baca mingguan.
         </p>
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {goal?.quranKhatamJuz ? (
             <div className="rounded-lg border border-border/60 p-3">
               <p className="mb-1 flex items-center gap-1.5 text-xs font-medium">

@@ -68,7 +68,7 @@ export function HealthGoals({ goal, weeklyExercise, avgSleep, avgSteps, latestWe
       </div>
 
       {editing ? (
-        <div className="grid gap-3 sm:grid-cols-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
           <div className="space-y-1.5">
             <p className="text-[11px] font-medium text-muted-foreground">Berat ideal (kg)</p>
             <Input type="number" step="0.1" placeholder="70" value={w} onChange={(e) => setW(e.target.value)} className="h-9 text-sm" />
@@ -96,7 +96,7 @@ export function HealthGoals({ goal, weeklyExercise, avgSleep, avgSteps, latestWe
           Atur target untuk melihat progress — klik &quot;Atur target&quot;.
         </p>
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {goal?.goalWeightKg ? (
             <GoalRow
               icon={<Scale className="size-3.5" />}

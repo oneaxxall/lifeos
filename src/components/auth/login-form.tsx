@@ -123,7 +123,7 @@ export function LoginForm() {
   };
 
   return (
-    <div className="grid min-h-screen lg:grid-cols-2">
+    <div className="grid grid-cols-1 min-h-screen lg:grid-cols-2">
       {/* ══ KIRI: FORM LOGIN ══ */}
       <div className="relative flex items-center justify-center overflow-hidden bg-gradient-to-br from-primary/10 via-background to-background p-4 sm:p-8">
         {/* dekorasi lembut */}

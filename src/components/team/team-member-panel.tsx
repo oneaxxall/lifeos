@@ -104,7 +104,7 @@ export function TeamMemberPanel({ items, selectedId, onSelect, onChanged }: Prop
       {showForm && (
         <div className="mb-3 space-y-2 rounded-lg border border-border/60 p-3">
           <Input placeholder="Nama… (mis. Rina Wijaya)" value={name} onChange={(e) => setName(e.target.value)} className="h-9 text-sm" />
-          <div className="grid gap-2 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             <Input placeholder="Peran (mis. Frontend Engineer)" value={role} onChange={(e) => setRole(e.target.value)} className="h-9 text-sm" />
             <Select value={seniority} onValueChange={setSeniority}>
               <SelectTrigger className="h-9 text-sm">

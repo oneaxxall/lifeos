@@ -61,7 +61,7 @@ export function TimeSummaryPanel({ data, range, onRangeChange }: Props) {
   const pctBuang = data.totalMenit > 0 ? Math.round((data.buangMenit / data.totalMenit) * 100) : 0;
 
   return (
-    <div className="grid gap-4 lg:grid-cols-3">
+    <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
       {/* Kartu statistik */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">

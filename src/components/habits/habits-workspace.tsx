@@ -199,7 +199,7 @@ export function HabitsWorkspace() {
               </p>
             </div>
           ) : (
-            <div className="grid gap-3 md:grid-cols-2">
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
               {filtered.map((h) => (
                 <HabitCard key={h.id} habit={h} stats={h.stats} onChanged={handleChanged} refreshKey={refreshKey} />
               ))}

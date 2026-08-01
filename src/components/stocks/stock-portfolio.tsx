@@ -138,7 +138,7 @@ export function StockPortfolio() {
   return (
     <div className="space-y-4">
       {/* ── Ringkasan ── */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="grid grid-cols-1 grid-cols-2 gap-3 sm:grid-cols-4">
         <div className="rounded-xl border border-border bg-card p-3.5 shadow-sm">
           <p className="flex items-center gap-1 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">
             <Wallet className="size-3 text-primary" /> Total modal
@@ -200,7 +200,7 @@ export function StockPortfolio() {
           </span>
         </button>
         {formOpen && (
-        <div className="grid gap-2.5 border-t border-border/60 px-4 py-3 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="grid grid-cols-1 gap-2.5 border-t border-border/60 px-4 py-3 sm:grid-cols-2 lg:grid-cols-5">
           <label className="block">
             <span className="mb-1 block text-[10px] font-medium text-muted-foreground">Kode saham</span>
             <Input

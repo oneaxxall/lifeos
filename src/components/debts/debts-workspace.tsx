@@ -275,7 +275,7 @@ export function DebtsWorkspace() {
       ) : (
         <>
           {/* ── Ringkasan ── */}
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="grid grid-cols-1 grid-cols-2 gap-3 sm:grid-cols-4">
             <div className="rounded-xl border border-border bg-card p-3.5 shadow-sm">
               <p className="flex items-center gap-1 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">
                 <Wallet className="size-3 text-rose-500" /> Hutang aktif

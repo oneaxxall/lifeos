@@ -108,7 +108,7 @@ export function TimeWorkspace() {
     <div className="space-y-5">
       <TimeInsightPanel refreshKey={refreshKey} />
 
-      <div className="grid gap-5 lg:grid-cols-[220px_1fr]">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-[220px_1fr]">
         {/* Group menu kategori */}
         <aside className="space-y-4 lg:sticky lg:top-20 lg:self-start">
           <CategoryMenu
@@ -137,7 +137,7 @@ export function TimeWorkspace() {
             onRangeChange={setRange}
           />
 
-          <div className="grid gap-4 xl:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
             <TimeBlockPanel
               blocks={blocks}
               categories={categories}

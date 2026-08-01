@@ -37,9 +37,9 @@ export function MonthlySummary({ data }: { data: MonthlySummaryData | null }) {
   }));
 
   return (
-    <div className="grid gap-4 lg:grid-cols-3">
+    <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
       {/* Kartu total */}
-      <div className="grid gap-4 sm:grid-cols-3 lg:col-span-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 lg:col-span-3">
         <div className="flex items-center gap-3 rounded-xl border border-border bg-card p-4 shadow-sm">
           <div className="flex size-10 items-center justify-center rounded-lg bg-emerald-500/10">
             <ArrowUpCircle className="size-5 text-emerald-600 dark:text-emerald-400" />

@@ -69,7 +69,7 @@ export function TeamWorkspace() {
     <div className="space-y-5">
       <TeamInsightPanel refreshKey={refreshKey} />
 
-      <div className="grid gap-5 xl:grid-cols-2">
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
         <TeamMemberPanel
           items={members}
           selectedId={selectedId}

@@ -60,15 +60,7 @@ export function SickForm({ onSaved }: Props) {
 
   return (
     <>
-      <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
-        <p className="mb-3 flex items-center gap-2 text-sm font-semibold">
-          <Stethoscope className="size-4 text-rose-500" />
-          Catat tidak enak badan
-          <span className="text-[10px] font-normal text-muted-foreground">
-            (analisa AI — bukan diagnosis)
-          </span>
-        </p>
-
+      <div className="p-4">
         <div className="space-y-3">
           <div className="space-y-1.5">
             <p className="text-xs font-medium text-muted-foreground">
@@ -83,7 +75,7 @@ export function SickForm({ onSaved }: Props) {
             />
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
               <p className="text-xs font-medium text-muted-foreground">Sudah berapa lama?</p>
               <div className="relative">

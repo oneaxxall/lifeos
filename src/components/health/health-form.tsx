@@ -66,7 +66,7 @@ export function HealthForm({ onSaved }: Props) {
         Catat kesehatan hari ini
       </p>
 
-      <div className="grid gap-3 sm:grid-cols-6">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-6">
         <div className="space-y-1.5">
           <p className="text-[11px] font-medium text-muted-foreground">Tanggal</p>
           <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="h-9 text-sm" />

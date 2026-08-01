@@ -66,7 +66,7 @@ export function HealthInsightPanel({ refreshKey }: Props) {
 
       {/* Isi */}
       {!collapsed && data && (
-        <div className="grid gap-3 px-4 pb-4 md:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 px-4 pb-4 md:grid-cols-3">
           {/* Tren */}
           <div className="rounded-lg border border-border/70 bg-background/60 p-3">
             <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">

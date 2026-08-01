@@ -606,7 +606,7 @@ export function StoriesWorkspace() {
               {/* Kategori — grid visual */}
               <div>
                 <span className="mb-1.5 block text-[10px] font-medium text-muted-foreground">Kategori cerita</span>
-                <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
+                <div className="grid grid-cols-1 grid-cols-2 gap-1.5 sm:grid-cols-4">
                   {CATEGORIES.map((c) => (
                     <button
                       key={c.id}

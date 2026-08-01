@@ -67,7 +67,7 @@ export function SpiritualInsightPanel({ refreshKey }: Props) {
       {/* Isi */}
       {!collapsed && data && (
         <div className="space-y-2.5 px-4 pb-4">
-          <div className="grid gap-2.5 md:grid-cols-2">
+          <div className="grid grid-cols-1 gap-2.5 md:grid-cols-2">
             {/* Konsistensi */}
             <div className="rounded-lg border border-border/70 bg-background/60 p-3">
               <p className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-amber-600 dark:text-amber-400">
