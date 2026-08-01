@@ -1,6 +1,8 @@
 import {
+  ArrowLeftRight,
   Brain,
   Briefcase,
+  Calculator,
   CheckSquare,
   Clock,
   DatabaseBackup,
@@ -14,6 +16,7 @@ import {
   Sparkles,
   Stethoscope,
   Timer,
+  TrendingUp,
   Users,
   UsersRound,
   Wallet,
@@ -39,12 +42,25 @@ export const navGroups: NavGroup[] = [
     items: [
       { title: "Beranda", href: "/", icon: Home, description: "Dashboard & insight AI" },
       { title: "Knowledge", href: "/knowledge", icon: Library, description: "Second brain & memori AI" },
+      { title: "Insights", href: "/insights", icon: Sparkles, description: "Hub AI lintas fitur" },
+    ],
+  },
+  {
+    label: "Keuangan",
+    items: [
+      { title: "Finance", href: "/finance", icon: Wallet, description: "Keuangan & analisa AI" },
+      { title: "Financial Planning", href: "/financial-planning", icon: Calculator, description: "FIRE, dana sekolah & darurat" },
+      { title: "Stocks", href: "/stocks", icon: TrendingUp, description: "Portofolio & kalkulator saham" },
+      { title: "Hutang & Piutang", href: "/debts", icon: ArrowLeftRight, description: "Utang-piutang & cicilan" },
+    ],
+  },
+  {
+    label: "Produktivitas",
+    items: [
       { title: "Todo", href: "/todo", icon: CheckSquare, description: "Tugas & prioritas AI" },
       { title: "Time", href: "/time", icon: Clock, description: "Time blocking & timer" },
       { title: "Activity", href: "/activity", icon: NotebookPen, description: "Catat aktivitas harian" },
       { title: "Pomodoro", href: "/pomodoro", icon: Timer, description: "Teknik fokus 25/5" },
-      { title: "Finance", href: "/finance", icon: Wallet, description: "Keuangan & analisa AI" },
-      { title: "Insights", href: "/insights", icon: Sparkles, description: "Hub AI lintas fitur" },
     ],
   },
   {

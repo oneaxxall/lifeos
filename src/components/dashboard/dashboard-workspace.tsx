@@ -27,6 +27,8 @@ interface DashboardStats {
   todayTodos: number;
   monthIncome: number;
   monthExpense: number;
+  monthBalance: number;
+  totalBalance: number;
   lastMood: { id: number; date: string; mood: number; note: string } | null;
   todayHealth: { id: number; sleepHours: number; exerciseMinutes: number; steps: number } | null;
   bestHabitStreak: number;
@@ -189,23 +191,31 @@ export function DashboardWorkspace() {
               </p>
             </Link>
 
-            {/* Finance */}
+            {/* Finance — sisa uang */}
             <Link
               href="/finance"
               className="group rounded-xl border border-border bg-card p-4 shadow-sm transition-colors hover:border-primary/40"
             >
               <div className="flex items-center justify-between">
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Keuangan bulan ini</p>
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Sisa uang bulan ini</p>
                 <Wallet className="size-3.5 text-emerald-500" />
               </div>
-              <p className="mt-1.5 text-2xl font-bold leading-none">
-                Rp{((s?.monthExpense ?? 0) - (s?.monthIncome ?? 0) < 0 ? s?.monthIncome ?? 0 : s?.monthExpense ?? 0).toLocaleString("id-ID")}
+              <p
+                className={cn(
+                  "mt-1.5 text-2xl font-bold leading-none",
+                  (s?.monthBalance ?? 0) >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"
+                )}
+              >
+                Rp{Math.abs(s?.monthBalance ?? 0).toLocaleString("id-ID")}
               </p>
               <p className="mt-1 flex items-center gap-1 text-[10px] text-muted-foreground">
                 <ArrowUpRight className="size-3 text-emerald-500" />
                 <span>Masuk Rp{(s?.monthIncome ?? 0).toLocaleString("id-ID")}</span>
                 <ArrowDownRight className="ml-1 size-3 text-rose-500" />
                 <span>Keluar Rp{(s?.monthExpense ?? 0).toLocaleString("id-ID")}</span>
+              </p>
+              <p className="mt-1 text-[10px] text-muted-foreground/70">
+                {(s?.monthBalance ?? 0) >= 0 ? "▲" : "▼"} Saldo total Rp{(s?.totalBalance ?? 0).toLocaleString("id-ID")}
               </p>
             </Link>
 

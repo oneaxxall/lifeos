@@ -543,6 +543,126 @@ export const pomodoroSessions = sqliteTable("pomodoro_sessions", {
     .default(sql`(datetime('now'))`),
 });
 
+/* ═══════════ Financial Planning (FIRE, dana sekolah, darurat) ═══════════ */
+
+export const financialPlans = sqliteTable("financial_plans", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  /** Pemasukan bulanan (Rp) */
+  monthlyIncome: integer("monthly_income").notNull().default(0),
+  /** Pengeluaran bulanan (Rp) */
+  monthlyExpense: integer("monthly_expense").notNull().default(0),
+  /** Tabungan/investasi per bulan (Rp) */
+  monthlySavings: integer("monthly_savings").notNull().default(0),
+  /** Target tabungan darurat (x pengeluaran bulanan) — default 6 */
+  emergencyMonths: integer("emergency_months").notNull().default(6),
+  /** Dana darurat yang sudah terkumpul (Rp) */
+  emergencyCurrent: integer("emergency_current").notNull().default(0),
+  /** Alokasi investasi saham (%) */
+  stockPct: integer("stock_pct").notNull().default(60),
+  /** Alokasi obligasi (%) */
+  bondPct: integer("bond_pct").notNull().default(30),
+  /** Alokasi deposito/emas/kas (%) */
+  cashPct: integer("cash_pct").notNull().default(10),
+  /** Return tahunan saham (%) — default 12 */
+  stockReturn: integer("stock_return").notNull().default(12),
+  /** Return tahunan obligasi (%) — default 6 */
+  bondReturn: integer("bond_return").notNull().default(6),
+  /** Return tahunan deposito/kas (%) — default 4 */
+  cashReturn: integer("cash_return").notNull().default(4),
+  /** Inflasi tahunan (%) — default 4 */
+  inflation: integer("inflation").notNull().default(4),
+  /** Pengali target FIRE (x pengeluaran tahunan) — default 25 */
+  fireMultiple: integer("fire_multiple").notNull().default(25),
+  /** Jumlah anak */
+  childrenCount: integer("children_count").notNull().default(0),
+  /** Usia anak tertua (tahun) */
+  childAge: integer("child_age").notNull().default(0),
+  /** Jenjang pendidikan target: sd/smp/sma/kuliah */
+  schoolLevel: text("school_level").notNull().default("kuliah"),
+  /** Biaya per tahun sekarang (Rp) */
+  schoolCostYear: integer("school_cost_year").notNull().default(0),
+  /** Inflasi pendidikan (%) — default 10 */
+  schoolInflation: integer("school_inflation").notNull().default(10),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+  updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
+});
+
+/* ═══════════ Hutang & Piutang (debt management) ═══════════ */
+
+export const debts = sqliteTable("debts", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  /** Arah: hutang (kita berutang) | piutang (orang berutang ke kita) */
+  type: text("type", { enum: ["hutang", "piutang"] }).notNull().default("hutang"),
+  /** Nama pihak (orang/lembaga) */
+  party: text("party").notNull(),
+  /** Total nominal (Rp) */
+  amount: integer("amount").notNull().default(0),
+  /** Mode pembayaran: sekali (1x bayar) | cicilan */
+  paymentMode: text("payment_mode", { enum: ["sekali", "cicilan"] }).notNull().default("sekali"),
+  /** Total cicilan (mode cicilan) */
+  installmentCount: integer("installment_count").notNull().default(1),
+  /** Cicilan yang sudah dibayar (mode cicilan) */
+  installmentsPaid: integer("installments_paid").notNull().default(0),
+  /** Nominal yang sudah dibayar/diterima (Rp) */
+  paidAmount: integer("paid_amount").notNull().default(0),
+  /** Tanggal mulai / tanggal transaksi */
+  date: text("date").notNull().default(sql`(date('now'))`),
+  /** Jatuh tempo (opsional) */
+  dueDate: text("due_date").default(""),
+  /** Status: belum | sebagian | lunas (dihitung dari paidAmount) */
+  status: text("status", { enum: ["belum", "sebagian", "lunas"] }).notNull().default("belum"),
+  /** Catatan */
+  notes: text("notes").default(""),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+  updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
+});
+
+/* ═══════════ Stock Portfolio (posisi saham dimiliki) ═══════════ */
+
+export const stockPortfolio = sqliteTable("stock_portfolio", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  /** Kode saham (ticker, uppercase) */
+  code: text("code").notNull(),
+  /** Jumlah lot dimiliki */
+  lot: integer("lot").notNull().default(0),
+  /** Harga beli rata-rata per lembar */
+  buyPrice: integer("buy_price").notNull().default(0),
+  /** Harga pasar sekarang (diisi manual user, opsional) */
+  marketPrice: integer("market_price").default(0),
+  /** Tanggal beli */
+  buyDate: text("buy_date").default(""),
+  /** Catatan */
+  notes: text("notes").default(""),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+  updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
+});
+
+/* ═══════════ Stock Plans (rencana avg down / right issue tersimpan) ═══════════ */
+
+export const stockPlans = sqliteTable("stock_plans", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  /** Kode saham (ticker, uppercase) — mis. BBRI */
+  code: text("code").notNull(),
+  /** Jenis rencana: avgdown | rightissue | lotfee */
+  type: text("type", { enum: ["avgdown", "rightissue", "lotfee"] }).notNull(),
+  /** Input kalkulasi (JSON string) */
+  inputJson: text("input_json").notNull(),
+  /** Hasil kalkulasi snapshot (JSON string) */
+  resultJson: text("result_json").notNull(),
+  /** Catatan opsional */
+  notes: text("notes").default(""),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+  updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
+});
+
 /* ═══════════ Insight Feedback (AI belajar) ═══════════ */
 
 export const insightFeedback = sqliteTable("insight_feedback", {
@@ -604,3 +724,7 @@ export type BadHabit = typeof badHabits.$inferSelect;
 export type HabitLog = typeof habitLogs.$inferSelect;
 export type DailyQuote = typeof dailyQuotes.$inferSelect;
 export type PomodoroSession = typeof pomodoroSessions.$inferSelect;
+export type FinancialPlan = typeof financialPlans.$inferSelect;
+export type StockPlan = typeof stockPlans.$inferSelect;
+export type StockPosition = typeof stockPortfolio.$inferSelect;
+export type Debt = typeof debts.$inferSelect;

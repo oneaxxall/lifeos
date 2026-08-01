@@ -47,6 +47,13 @@ export async function GET() {
   const monthIncome = monthTxs.filter((t) => t.type === "masuk").reduce((a, t) => a + t.amount, 0);
   const monthExpense = monthTxs.filter((t) => t.type === "keluar").reduce((a, t) => a + t.amount, 0);
 
+  // ── Sisa uang total (semua transaksi, sepanjang waktu) ──
+  const allTxs = db.select().from(financeTransactions).all();
+  const totalBalance = allTxs.reduce(
+    (a, t) => a + (t.type === "masuk" ? t.amount : -t.amount),
+    0
+  );
+
   // ── Statistik Kesehatan & Mood ──
   const lastMood = db.select().from(moodEntries).orderBy(desc(moodEntries.date)).limit(1).get();
   const todayHealth = db
@@ -127,6 +134,10 @@ export async function GET() {
         todayTodos,
         monthIncome,
         monthExpense,
+        /** Sisa uang bulan ini = masuk − keluar */
+        monthBalance: monthIncome - monthExpense,
+        /** Sisa uang total (semua waktu) */
+        totalBalance,
         lastMood: lastMood ?? null,
         todayHealth: todayHealth ?? null,
         bestHabitStreak,

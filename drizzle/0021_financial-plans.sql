@@ -1,0 +1,23 @@
+CREATE TABLE `financial_plans` (
+	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+	`monthly_income` integer DEFAULT 0 NOT NULL,
+	`monthly_expense` integer DEFAULT 0 NOT NULL,
+	`monthly_savings` integer DEFAULT 0 NOT NULL,
+	`emergency_months` integer DEFAULT 6 NOT NULL,
+	`emergency_current` integer DEFAULT 0 NOT NULL,
+	`stock_pct` integer DEFAULT 60 NOT NULL,
+	`bond_pct` integer DEFAULT 30 NOT NULL,
+	`cash_pct` integer DEFAULT 10 NOT NULL,
+	`stock_return` integer DEFAULT 12 NOT NULL,
+	`bond_return` integer DEFAULT 6 NOT NULL,
+	`cash_return` integer DEFAULT 4 NOT NULL,
+	`inflation` integer DEFAULT 4 NOT NULL,
+	`fire_multiple` integer DEFAULT 25 NOT NULL,
+	`children_count` integer DEFAULT 0 NOT NULL,
+	`child_age` integer DEFAULT 0 NOT NULL,
+	`school_level` text DEFAULT 'kuliah' NOT NULL,
+	`school_cost_year` integer DEFAULT 0 NOT NULL,
+	`school_inflation` integer DEFAULT 10 NOT NULL,
+	`created_at` text DEFAULT (datetime('now')) NOT NULL,
+	`updated_at` text DEFAULT (datetime('now')) NOT NULL
+);

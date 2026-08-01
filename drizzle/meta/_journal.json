@@ -148,6 +148,34 @@
       "when": 1785564653395,
       "tag": "0020_pomodoro",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "6",
+      "when": 1785569244870,
+      "tag": "0021_financial-plans",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "6",
+      "when": 1785570609493,
+      "tag": "0022_stock-plans",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "6",
+      "when": 1785571341636,
+      "tag": "0023_stock-portfolio",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "6",
+      "when": 1785572389428,
+      "tag": "0024_debts",
+      "breakpoints": true
     }
   ]
 }
