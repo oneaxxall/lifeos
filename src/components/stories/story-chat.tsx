@@ -21,6 +21,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { QuillContent } from "@/components/ui/rich-text-editor";
+import { sanitizeHtml } from "@/lib/sanitize";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -360,9 +362,13 @@ export function StoryChat({ age: initialAge }: { age: number }) {
                             ))}
                           </p>
                         )}
-                        <p className="mt-1.5 whitespace-pre-wrap text-[10px] leading-relaxed text-muted-foreground">
-                          {s.story || <span className="italic">(belum ada isi)</span>}
-                        </p>
+                        <div className="mt-1.5">
+                          {s.story ? (
+                            <QuillContent html={sanitizeHtml(s.story)} className="!p-0 text-[10px] leading-relaxed text-muted-foreground" />
+                          ) : (
+                            <span className="text-[10px] italic text-muted-foreground">(belum ada isi)</span>
+                          )}
+                        </div>
                       </div>
                     );
                   })

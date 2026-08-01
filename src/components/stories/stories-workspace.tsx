@@ -20,14 +20,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { RichTextEditor, QuillContent } from "@/components/ui/rich-text-editor";
+import { sanitizeHtml } from "@/lib/sanitize";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -521,7 +516,11 @@ export function StoriesWorkspace() {
                                   </p>
                                 )}
                                 <p className="mt-1.5 whitespace-pre-wrap text-[11px] leading-relaxed text-muted-foreground">
-                                  {s.story || <span className="italic">(belum ada isi)</span>}
+                                  {s.story ? (
+                                    <QuillContent html={sanitizeHtml(s.story)} className="!p-0 text-[11px] leading-relaxed text-muted-foreground" />
+                                  ) : (
+                                    <span className="italic">(belum ada isi)</span>
+                                  )}
                                 </p>
                               </div>
                             );
@@ -554,64 +553,121 @@ export function StoriesWorkspace() {
 
       {profileOpen && profileForm}
 
-      {/* ── Dialog form cerita (besar) ── */}
+      {/* ── Dialog form cerita (informatif + RichTextEditor) ── */}
       {formOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setFormOpen(false)}>
           <div
-            className="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-xl border border-border bg-card p-6 shadow-lg"
+            className="max-h-[94vh] w-full max-w-3xl overflow-y-auto rounded-xl border border-border bg-card p-6 shadow-lg"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="mb-4 flex items-center justify-between">
-              <p className="text-base font-semibold">
-                {editing ? "Edit cerita" : `Tulis cerita — usia ${formAge} tahun`}
-              </p>
+            {/* Header */}
+            <div className="mb-4 flex items-start justify-between gap-3">
+              <div>
+                <p className="text-base font-semibold">
+                  {editing ? "✏️ Edit cerita" : "📖 Tulis cerita"}
+                </p>
+                <p className="mt-0.5 text-[11px] text-muted-foreground">
+                  Simpan kenanganmu — setiap cerita memperkaya pohon kehidupanmu.
+                </p>
+              </div>
               <Button variant="ghost" size="icon" className="size-7" onClick={() => setFormOpen(false)} aria-label="Tutup">
                 <Plus className="size-4 rotate-45" />
               </Button>
             </div>
-            <div className="space-y-3">
-              <div className="grid gap-2 sm:grid-cols-3">
-                <label className="block">
-                  <span className="mb-1 block text-[10px] font-medium text-muted-foreground">Usia saat itu</span>
-                  <Input type="number" min={1} max={120} value={formAge || ""} onChange={(e) => setFormAge(Number(e.target.value))} className="h-9 text-sm" />
-                </label>
-                <label className="block">
-                  <span className="mb-1 block text-[10px] font-medium text-muted-foreground">Kategori</span>
-                  <Select value={category} onValueChange={setCategory}>
-                    <SelectTrigger className="h-9 text-sm" aria-label="Kategori">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {CATEGORIES.map((c) => (
-                        <SelectItem key={c.id} value={c.id}>{c.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </label>
-                <label className="block">
-                  <span className="mb-1 block text-[10px] font-medium text-muted-foreground">Judul cerita</span>
-                  <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="mis. Pertama kali patah hati" className="h-9 text-sm" />
-                </label>
+
+            {/* Preview stage — live update */}
+            <div className="mb-4 flex flex-wrap items-center gap-2 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3">
+              <span className="flex size-9 items-center justify-center rounded-full bg-primary/15 text-sm font-bold text-primary">
+                {formAge || "?"}
+              </span>
+              <div>
+                <p className="text-xs font-semibold">
+                  Usia {formAge || "—"} tahun · {faseOf(formAge || 0)}
+                  <span className="ml-1.5 rounded-full bg-primary/10 px-1.5 py-0.5 text-[9px] font-medium text-primary">
+                    otomatis dari stage
+                  </span>
+                </p>
+                <p className="text-[10px] text-muted-foreground">
+                  {stageDate(profile?.birthDate ?? "", formAge || 0) || "Isi tanggal lahir di biodata untuk melihat bulan-tahun"}
+                </p>
               </div>
+              <span className="ml-auto hidden text-[10px] text-muted-foreground sm:block">
+                {title.trim() ? `"${title.trim().slice(0, 40)}"` : "Belum ada judul"}
+              </span>
+            </div>
+
+            <div className="space-y-4">
+              {/* Judul — usia otomatis dari stage yang dipilih */}
+              <label className="block">
+                <span className="mb-1 block text-[10px] font-medium text-muted-foreground">Judul cerita</span>
+                <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="mis. Pertama kali patah hati" className="h-10 text-sm" />
+              </label>
+
+              {/* Kategori — grid visual */}
+              <div>
+                <span className="mb-1.5 block text-[10px] font-medium text-muted-foreground">Kategori cerita</span>
+                <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
+                  {CATEGORIES.map((c) => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => setCategory(c.id)}
+                      className={cn(
+                        "flex items-center gap-1.5 rounded-lg border px-2.5 py-2 text-[11px] font-medium transition-colors",
+                        category === c.id
+                          ? "border-primary/50 bg-primary/10 text-primary"
+                          : "border-border text-muted-foreground hover:bg-muted/40"
+                      )}
+                    >
+                      <span className="text-sm">{c.label.split(" ")[0]}</span>
+                      <span className="truncate">{c.label.replace(/^[^ ]+ /, "")}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Aktor */}
               <label className="block">
                 <span className="mb-1 flex items-center gap-1 text-[10px] font-medium text-muted-foreground">
                   <Users className="size-3" /> Aktor yang terlibat (pisahkan dengan koma)
                 </span>
-                <Input value={actors} onChange={(e) => setActors(e.target.value)} placeholder="mis. Ayah, Siti, sahabat kuliah" className="h-9 text-sm" />
+                <Input value={actors} onChange={(e) => setActors(e.target.value)} placeholder="mis. Ayah, Siti, sahabat kuliah" className="h-10 text-sm" />
+                {actors.trim() && (
+                  <span className="mt-1.5 flex flex-wrap gap-1">
+                    {actors.split(",").map((a) => a.trim()).filter(Boolean).map((a, i) => (
+                      <span key={i} className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] text-primary">👤 {a}</span>
+                    ))}
+                  </span>
+                )}
               </label>
-              <label className="block">
+
+              {/* Cerita — RichTextEditor (Quill) */}
+              <div>
                 <span className="mb-1 block text-[10px] font-medium text-muted-foreground">Ceritanya</span>
-                <Textarea
+                <RichTextEditor
                   value={story}
-                  onChange={(e) => setStory(e.target.value)}
+                  onChange={setStory}
                   placeholder="Tuliskan apa yang terjadi, siapa pelakunya, bagaimana perasaanmu saat itu…"
-                  rows={14}
-                  className="min-h-[280px] text-sm leading-relaxed"
+                  minHeight={300}
                 />
-                <span className="mt-1 block text-right text-[10px] text-muted-foreground">
-                  {story.length.toLocaleString("id-ID")} karakter — tulis sepanjang yang kamu ingat
-                </span>
-              </label>
+                <div className="mt-1 flex items-center justify-between text-[10px] text-muted-foreground">
+                  <span>
+                    {story.replace(/<[^>]*>/g, "").trim().split(/\s+/).filter(Boolean).length.toLocaleString("id-ID")} kata
+                  </span>
+                  <span>
+                    {story.replace(/<[^>]*>/g, "").length.toLocaleString("id-ID")} karakter — tulis sepanjang yang kamu ingat
+                  </span>
+                </div>
+              </div>
+
+              {/* Tips + simpan */}
+              <div className="flex items-center gap-3 rounded-xl bg-muted/40 px-4 py-3">
+                <span className="text-lg">💡</span>
+                <p className="text-[11px] leading-relaxed text-muted-foreground">
+                  <b>Tulis dengan jujur dan detail</b> — siapa pelakunya, apa yang terjadi, dan
+                  bagaimana perasaanmu saat itu. Cerita ini jadi konteks AI curhatmu.
+                </p>
+              </div>
               <Button onClick={() => void save()} disabled={saving} className="w-full gap-2 py-2.5">
                 {saving ? <Loader2 className="size-4 animate-spin" /> : <Heart className="size-4" />}
                 {saving ? "Menyimpan…" : editing ? "Simpan perubahan" : "Simpan cerita"}
