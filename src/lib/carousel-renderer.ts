@@ -195,6 +195,69 @@ export async function loadPicsum(seed: string, w: number, h: number): Promise<HT
   }
 }
 
+/** Layout hero untuk slide HOOK & CTA — typography besar center, tanpa bullet. */
+function renderHeroContent(
+  ctx: CanvasRenderingContext2D,
+  opts: RenderSlideOpts,
+  w: number,
+  h: number,
+  pad: number,
+  headerBottom: number,
+  isHook: boolean
+) {
+  const maxW = w - pad * 2;
+  const cx = w / 2;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "top";
+  let y = headerBottom + h * 0.055;
+
+  // Emoji besar di atas
+  if (opts.slide.emoji) {
+    ctx.font = `${Math.round(h * 0.07)}px ${FONT_SANS}`;
+    ctx.fillText(opts.slide.emoji, cx, y);
+    y += h * 0.085;
+  }
+
+  // Heading besar center — Playfair 800, gradasi dramatis
+  const hs = Math.round(h * (isHook ? 0.085 : 0.072));
+  ctx.font = `800 ${hs}px ${FONT_SERIF}`;
+  ctx.letterSpacing = `${Math.round(-hs * 0.012)}px`;
+  const lines = wrapText(ctx, opts.slide.heading, maxW * 0.92);
+  const hg = ctx.createLinearGradient(0, y, 0, y + hs * lines.length * 1.2);
+  hg.addColorStop(0, "#FFFFFF");
+  hg.addColorStop(1, "rgba(255,255,255,0.82)");
+  ctx.fillStyle = hg;
+  for (const line of lines) {
+    ctx.fillText(line, cx, y);
+    y += hs * 1.16;
+  }
+  ctx.letterSpacing = "0px";
+
+  // Garis aksen center
+  const hw = Math.max(...lines.map((l) => ctx.measureText(l).width));
+  ctx.fillStyle = opts.spec.palet[2] || "#5EEAD4";
+  const ackW = Math.max(hs * 0.8, Math.min(hw * 0.42, maxW * 0.55));
+  const ackY = y + h * 0.024;
+  ctx.fillRect(cx - ackW / 2, ackY, ackW, Math.max(2, h * 0.0025));
+  y = ackY + Math.max(2, h * 0.0025) + h * 0.06;
+
+  // Konten pendukung center (tanpa bullet)
+  const ps = Math.round(h * (isHook ? 0.03 : 0.027));
+  ctx.font = `500 ${ps}px ${FONT_SANS}`;
+  ctx.fillStyle = "rgba(255,255,255,0.82)";
+  for (const pt of opts.slide.points) {
+    const pl = wrapText(ctx, pt, maxW * 0.88);
+    for (const l of pl) {
+      if (y > h * 0.86) break;
+      ctx.fillText(l, cx, y);
+      y += ps * 1.55;
+    }
+    y += h * (isHook ? 0.01 : 0.028);
+  }
+  ctx.textAlign = "left";
+  ctx.textBaseline = "top";
+}
+
 export interface RenderSlideOpts {
   slide: SlideData;
   index: number;
@@ -289,8 +352,8 @@ export async function renderSlide(opts: RenderSlideOpts): Promise<HTMLCanvasElem
       ctx.fillStyle = "rgba(255,255,255,0.95)";
       ctx.fillText(opts.branding.brandName, pad + avatarR * 2 + h * 0.02, headY + avatarR * 0.55);
     }
-    // Badge topik kanan (selalu tampil)
-    const badgeText = `${opts.index + 1}/${opts.total}  ${opts.topic.slice(0, 18)}`.toUpperCase();
+    // Badge posisi slide (tanpa title — hanya nomor)
+    const badgeText = `${opts.index + 1}/${opts.total}`;
     ctx.font = `600 ${Math.round(h * 0.02)}px ${FONT_SANS}`;
     const bw = ctx.measureText(badgeText).width + h * 0.04;
     const bx = w - pad - bw;
@@ -305,10 +368,16 @@ export async function renderSlide(opts: RenderSlideOpts): Promise<HTMLCanvasElem
     headerBottom = hasLogo ? headY + avatarR * 2 + h * 0.045 : headY + h * 0.07;
   }
 
-  // Emoji slide — kanan atas, SEBELUM badge (sejajar header, tidak menimpa title/watermark)
-  if (opts.slide.emoji) {
+  // Slide HOOK/CTA — layout hero khusus (typography berbeda, tanpa bullet)
+  const sMeta = opts.slide as SlideData & { isHook?: boolean; isCta?: boolean };
+  const isHook = sMeta.isHook === true;
+  const isCta = sMeta.isCta === true;
+  const isHero = isHook || isCta;
+
+  // Emoji slide — kanan atas SEBELUM badge (hanya untuk slide regular; hero punya emoji besar sendiri)
+  if (opts.slide.emoji && !isHero) {
     const headY = Math.round(h * 0.055);
-    const badgeText = `${opts.index + 1}/${opts.total}  ${opts.topic.slice(0, 18)}`.toUpperCase();
+    const badgeText = `${opts.index + 1}/${opts.total}`;
     ctx.font = `600 ${Math.round(h * 0.02)}px ${FONT_SANS}`;
     const bw = ctx.measureText(badgeText).width + h * 0.04;
     const bx = w - pad - bw;
@@ -320,6 +389,10 @@ export async function renderSlide(opts: RenderSlideOpts): Promise<HTMLCanvasElem
     ctx.textBaseline = "alphabetic";
   }
 
+  // ── Konten: hero (HOOK/CTA) atau regular ──
+  if (isHero) {
+    renderHeroContent(ctx, opts, w, h, pad, headerBottom, isHook);
+  } else {
   // Konten utama — jarak lega dari header, naik proporsional
   const contentTop = headerBottom + h * 0.05;
   const maxW = w - pad * 2;
@@ -402,6 +475,7 @@ export async function renderSlide(opts: RenderSlideOpts): Promise<HTMLCanvasElem
       y += h * 0.012;
     }
     ctx.textBaseline = "top";
+  }
   }
 
   // 4. Footer branding

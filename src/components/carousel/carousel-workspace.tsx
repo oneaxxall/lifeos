@@ -309,6 +309,9 @@ export function CarouselWorkspace() {
                   <span>7</span>
                   <span>10</span>
                 </div>
+                <p className="mt-1 text-[9px] leading-relaxed text-muted-foreground">
+                  = <b className="text-foreground/70">{slideCount + 2} slide total</b> (1 HOOK + {slideCount} isi + 1 CTA)
+                </p>
               </div>
 
               {/* Tema warna — swatch */}

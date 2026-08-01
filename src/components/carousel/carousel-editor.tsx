@@ -36,6 +36,7 @@ import {
   type CarouselSize,
   type SlideData,
 } from "@/lib/carousel-renderer";
+import { buildCarouselSlides } from "@/lib/carousel-utils";
 
 interface CarouselDetail {
   id: number;
@@ -77,6 +78,13 @@ export function CarouselEditor({ id }: { id: number }) {
   const [zipping, setZipping] = React.useState(false);
   const canvasRef = React.useRef<HTMLCanvasElement | null>(null);
 
+  // Slides virtual: [HOOK, ...isi, CTA] — hook & CTA dibuat otomatis, isi bisa diedit
+  const virtual = React.useMemo(() => {
+    if (!item || slides.length === 0) return null;
+    const d = parseCarousel(item.content);
+    return buildCarouselSlides(d?.judul ?? item.topic, item.topic, slides);
+  }, [item, slides]);
+
   // Settings branding dialog
   const [settingsOpen, setSettingsOpen] = React.useState(false);
   const [sBrandName, setSBrandName] = React.useState("LifeOS");
@@ -115,7 +123,7 @@ export function CarouselEditor({ id }: { id: number }) {
   }, [id, router]);
 
   const draw = React.useCallback(async () => {
-    if (!item || slides.length === 0) return;
+    if (!item || !virtual || slides.length === 0) return;
     setRendering(true);
     try {
       const data = parseCarousel(item.content);
@@ -126,9 +134,9 @@ export function CarouselEditor({ id }: { id: number }) {
         bentuk: data?.bgSpec?.bentuk,
       };
       const canvas = await renderSlide({
-        slide: slides[idx],
+        slide: virtual.slides[idx],
         index: idx,
-        total: slides.length,
+        total: virtual.slides.length,
         topic: item.topic,
         spec,
         bgSource: item.bgSource,
@@ -146,7 +154,7 @@ export function CarouselEditor({ id }: { id: number }) {
     } finally {
       setRendering(false);
     }
-  }, [item, slides, idx, size, branding]);
+  }, [item, slides, idx, size, branding, virtual]);
 
   React.useEffect(() => {
     if (slides.length > 0) {
@@ -156,13 +164,14 @@ export function CarouselEditor({ id }: { id: number }) {
   }, [slides, idx, size, branding, draw]);
 
   const updateSlide = (field: "heading" | "emoji", value: string) => {
-    setSlides((prev) => prev.map((s, i) => (i === idx ? { ...s, [field]: value } : s)));
+    // idx virtual → isi (idx - 1); form hanya untuk slide isi
+    setSlides((prev) => prev.map((s, i) => (i === idx - 1 ? { ...s, [field]: value } : s)));
   };
 
   const updatePoint = (pointIdx: number, value: string) => {
     setSlides((prev) =>
       prev.map((s, i) => {
-        if (i !== idx) return s;
+        if (i !== idx - 1) return s;
         const points = [...s.points];
         points[pointIdx] = value;
         return { ...s, points };
@@ -171,12 +180,12 @@ export function CarouselEditor({ id }: { id: number }) {
   };
 
   const addPoint = () => {
-    setSlides((prev) => prev.map((s, i) => (i === idx && s.points.length < 4 ? { ...s, points: [...s.points, ""] } : s)));
+    setSlides((prev) => prev.map((s, i) => (i === idx - 1 && s.points.length < 4 ? { ...s, points: [...s.points, ""] } : s)));
   };
 
   const removePoint = (pointIdx: number) => {
     setSlides((prev) =>
-      prev.map((s, i) => (i === idx ? { ...s, points: s.points.filter((_, j) => j !== pointIdx) } : s))
+      prev.map((s, i) => (i === idx - 1 ? { ...s, points: s.points.filter((_, j) => j !== pointIdx) } : s))
     );
   };
 
@@ -210,7 +219,7 @@ export function CarouselEditor({ id }: { id: number }) {
   };
 
   const downloadZip = async () => {
-    if (!item || slides.length === 0) return;
+    if (!item || !virtual || virtual.slides.length === 0) return;
     setZipping(true);
     try {
       const data = parseCarousel(item.content);
@@ -223,11 +232,11 @@ export function CarouselEditor({ id }: { id: number }) {
       const b = branding ?? { brandName: "LifeOS", handle: "@lifeos", tagline: "", initials: "L", showBranding: true };
       const zip = new JSZip();
       const base = item.topic.replace(/[^a-z0-9]/gi, "-").toLowerCase();
-      for (let i = 0; i < slides.length; i++) {
+      for (let i = 0; i < virtual.slides.length; i++) {
         const canvas = await renderSlide({
-          slide: slides[i],
+          slide: virtual.slides[i],
           index: i,
-          total: slides.length,
+          total: virtual.slides.length,
           topic: item.topic,
           spec,
           bgSource: item.bgSource,
@@ -243,7 +252,7 @@ export function CarouselEditor({ id }: { id: number }) {
       a.download = `${base}-${size}.zip`;
       a.click();
       URL.revokeObjectURL(a.href);
-      toast.success(`${slides.length} slide diunduh sebagai ZIP 📦`);
+      toast.success(`${virtual.slides.length} slide diunduh sebagai ZIP 📦`);
     } catch {
       toast.error("Gagal membuat ZIP");
     } finally {
@@ -299,30 +308,36 @@ export function CarouselEditor({ id }: { id: number }) {
   if (!item) return null;
 
   const data = parseCarousel(item.content);
-  const current = slides[idx];
+  const vSlides = virtual?.slides ?? [];
+  const current = vSlides[idx];
+  const isAutoSlide = virtual?.isAuto(idx) ?? false;
 
   return (
     <div className="space-y-4">
-      {/* ── Header ── */}
-      <header className="flex flex-wrap items-center gap-3">
-        <Button variant="ghost" size="icon" className="size-8" onClick={() => router.push("/carousel")} aria-label="Kembali">
-          <ArrowLeft className="size-4" />
-        </Button>
-        <div className="min-w-0 flex-1">
-          <h1 className="flex items-center gap-2 text-xl font-semibold tracking-tight">
-            <ImageIcon className="size-5 text-primary" /> {data?.judul ?? item.topic}
-          </h1>
-          <p className="truncate text-xs text-muted-foreground">
-            🎯 {item.topic} · {item.slideCount} slide · {CAROUSEL_RATIOS[size].label}
-          </p>
+      {/* ── Header (mobile: title & tombol menumpuk ke bawah) ── */}
+      <header className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <Button variant="ghost" size="icon" className="size-8 shrink-0" onClick={() => router.push("/carousel")} aria-label="Kembali">
+            <ArrowLeft className="size-4" />
+          </Button>
+          <div className="min-w-0 flex-1">
+            <h1 className="flex items-center gap-2 text-xl font-semibold tracking-tight">
+              <ImageIcon className="size-5 shrink-0 text-primary" /> {data?.judul ?? item.topic}
+            </h1>
+            <p className="truncate text-xs text-muted-foreground">
+              🎯 {item.topic} · {item.slideCount} slide · {CAROUSEL_RATIOS[size].label}
+            </p>
+          </div>
         </div>
-        <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs" onClick={openSettings}>
-          <Settings2 className="size-3.5" /> Branding
-        </Button>
-        <Button size="sm" className="h-8 gap-1.5 text-xs" onClick={() => void downloadZip()} disabled={zipping}>
-          {zipping ? <Loader2 className="size-3.5 animate-spin" /> : <Download className="size-3.5" />}
-          Download ZIP
-        </Button>
+        <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
+          <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs" onClick={openSettings}>
+            <Settings2 className="size-3.5" /> Branding
+          </Button>
+          <Button size="sm" className="h-8 gap-1.5 text-xs" onClick={() => void downloadZip()} disabled={zipping}>
+            {zipping ? <Loader2 className="size-3.5 animate-spin" /> : <Download className="size-3.5" />}
+            Download ZIP
+          </Button>
+        </div>
       </header>
 
       <div className="space-y-4">
@@ -345,14 +360,14 @@ export function CarouselEditor({ id }: { id: number }) {
                 <ChevronLeft className="size-4" />
               </Button>
               <span className="text-xs tabular-nums text-muted-foreground">
-                {idx + 1} / {slides.length}
+                {idx + 1} / {vSlides.length}
               </span>
               <Button
                 variant="ghost"
                 size="icon"
                 className="size-7"
-                disabled={idx >= slides.length - 1}
-                onClick={() => setIdx((i) => Math.min(slides.length - 1, i + 1))}
+                disabled={idx >= vSlides.length - 1}
+                onClick={() => setIdx((i) => Math.min(vSlides.length - 1, i + 1))}
               >
                 <ChevronRight className="size-4" />
               </Button>
@@ -361,7 +376,7 @@ export function CarouselEditor({ id }: { id: number }) {
 
           {/* Indikator dots */}
           <div className="flex gap-1">
-            {slides.map((_, i) => (
+            {vSlides.map((_, i) => (
               <button
                 key={i}
                 onClick={() => setIdx(i)}
@@ -391,14 +406,43 @@ export function CarouselEditor({ id }: { id: number }) {
               <Sparkles className="size-4 text-primary" /> Edit slide {idx + 1}
             </p>
             <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
-              Slide {idx + 1} dari {slides.length}
+              Slide {idx + 1} dari {vSlides.length}
             </span>
+            {isAutoSlide && (
+              <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-semibold", idx === 0 ? "bg-rose-500/10 text-rose-600 dark:text-rose-400" : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400")}>
+                {idx === 0 ? "🚀 HOOK — otomatis" : "💚 CTA — otomatis"}
+              </span>
+            )}
             <span className="ml-auto text-[10px] text-muted-foreground">
               Perubahan tampil langsung di preview ⚡
             </span>
           </div>
 
-          {current && (
+          {isAutoSlide ? (
+            <div className="space-y-3 p-4">
+              <div className={cn("rounded-lg border p-3.5 text-xs leading-relaxed", idx === 0 ? "border-rose-500/30 bg-rose-500/[0.06]" : "border-emerald-500/30 bg-emerald-500/[0.06]")}>
+                {idx === 0 ? (
+                  <>
+                    <p className="font-semibold text-rose-600 dark:text-rose-400">🚀 Slide HOOK (otomatis)</p>
+                    <p className="mt-1 text-muted-foreground">
+                      Slide pertama = judul besar carousel — dibuat otomatis dari judul & poin pertama konten. Fungsinya menghentikan scroll pembaca.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className="font-semibold text-emerald-600 dark:text-emerald-400">💚 Slide CTA (otomatis)</p>
+                    <p className="mt-1 text-muted-foreground">
+                      Slide terakhir = ajakan simpan/follow/share — dibuat otomatis agar kontenmu punya penutup yang menggerakkan pembaca.
+                    </p>
+                  </>
+                )}
+              </div>
+              <p className="text-[10px] text-muted-foreground">
+                Total carousel: <b>{vSlides.length} slide</b> = 1 HOOK + {slides.length} isi + 1 CTA. Slide ini tidak perlu diedit — otomatis mengikuti judul.
+              </p>
+            </div>
+          ) : (
+            current && (
             <div className="space-y-4 p-4">
               {/* Emoji + Judul */}
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-[110px_1fr]">
@@ -497,6 +541,7 @@ export function CarouselEditor({ id }: { id: number }) {
                 </Button>
               </div>
             </div>
+            )
           )}
         </div>
       </div>
