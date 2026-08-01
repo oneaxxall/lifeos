@@ -1,6 +1,9 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
+import { format } from "date-fns";
+import { id as idLocale } from "date-fns/locale";
 import {
   BookHeart,
   CalendarDays,
@@ -14,7 +17,6 @@ import {
   Trash2,
   Users,
 } from "lucide-react";
-import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -71,6 +73,15 @@ function faseOf(age: number): string {
   if (age <= 17) return "Remaja";
   if (age <= 23) return "Dewasa awal";
   return "Dewasa";
+}
+
+/** Bulan + tahun untuk stage usia N: bulan lahir + tahun lahir+N. Contoh: "Agustus 1997". */
+function stageDate(birthDate: string, age: number): string {
+  if (!birthDate) return "";
+  const b = new Date(birthDate + "T00:00:00");
+  if (Number.isNaN(b.getTime())) return "";
+  const d = new Date(b.getFullYear() + age, b.getMonth(), 1);
+  return format(d, "MMMM yyyy", { locale: idLocale });
 }
 
 /** Hitung usia sekarang dari tanggal lahir. */
@@ -406,17 +417,18 @@ export function StoriesWorkspace() {
                         <button
                           onClick={() => setSelectedAge(age)}
                           className={cn(
-                            "flex w-full min-w-0 items-center gap-2.5 rounded-xl py-2 pl-3 pr-2 text-left transition-all duration-200",
+                            "group/stage flex w-full min-w-0 items-center gap-2.5 rounded-xl py-2 pl-3 pr-2 text-left transition-all duration-200",
+                            "hover:-translate-y-0.5 hover:shadow-md hover:shadow-primary/10 hover:ring-1 hover:ring-primary/30",
                             isLeft && "flex-row-reverse text-right",
                             isActive
                               ? "bg-gradient-to-r from-primary/10 to-primary/5 ring-1 ring-primary/20"
-                              : "hover:bg-muted/30"
+                              : "hover:bg-primary/5"
                           )}
                         >
                           <span
                             className={cn(
-                              "text-sm font-bold tabular-nums",
-                              hasStories || isActive ? "text-primary" : "text-foreground"
+                              "text-sm font-bold tabular-nums transition-colors",
+                              hasStories || isActive ? "text-primary" : "text-foreground group-hover/stage:text-primary"
                             )}
                           >
                             {age}
@@ -424,11 +436,15 @@ export function StoriesWorkspace() {
                           <span className="text-[9px] uppercase tracking-wide text-muted-foreground">thn</span>
                           <span
                             className={cn(
-                              "hidden rounded-full px-2 py-0.5 text-[9px] font-medium sm:inline",
-                              isActive ? "bg-primary/15 text-primary" : "bg-muted/60 text-muted-foreground"
+                              "hidden rounded-full px-2 py-0.5 text-[9px] font-medium transition-colors sm:inline",
+                              isActive ? "bg-primary/15 text-primary" : "bg-muted/60 text-muted-foreground group-hover/stage:bg-primary/10 group-hover/stage:text-primary"
                             )}
                           >
                             {faseOf(age)}
+                          </span>
+                          {/* Bulan + tahun stage */}
+                          <span className="min-w-0 truncate text-[10px] font-medium text-muted-foreground/80 transition-colors group-hover/stage:text-primary/80">
+                            {stageDate(profile?.birthDate ?? "", age)}
                           </span>
                           <div className={cn("flex shrink-0 items-center gap-1.5", isLeft ? "mr-auto" : "ml-auto")}>
                             {hasStories ? (
