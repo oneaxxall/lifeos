@@ -12,7 +12,6 @@ import {
   Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { toast } from "sonner";
@@ -317,7 +316,7 @@ export function ContentIdeasPanel() {
                         <span className="leading-snug break-words [overflow-wrap:anywhere]">{idea.hook}</span>
                       </p>
                       <p className="mt-1 line-clamp-3 text-[10px] leading-relaxed text-muted-foreground italic">
-                        "{idea.hookLine}"
+                        &quot;{idea.hookLine}&quot;
                       </p>
                     </div>
                   ))}

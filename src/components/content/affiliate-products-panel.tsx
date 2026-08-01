@@ -10,7 +10,6 @@ import {
   MousePointerClick,
   Search,
   ShoppingBag,
-  Sparkles,
   ThumbsUp,
   Trash2,
   Wallet,

@@ -5,6 +5,7 @@ import {
   Briefcase,
   Calculator,
   CheckSquare,
+  Clapperboard,
   Clock,
   DatabaseBackup,
   Dumbbell,

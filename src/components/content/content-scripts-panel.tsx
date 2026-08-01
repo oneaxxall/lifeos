@@ -13,7 +13,6 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -76,16 +75,6 @@ export function ContentScriptsPanel() {
       toast.error("Gagal memuat naskah");
     } finally {
       setLoading(false);
-    }
-  }, []);
-
-  const loadIdeas = React.useCallback(async () => {
-    try {
-      const res = await fetch("/api/content/ideas");
-      const json = await res.json();
-      setIdeas((json.data ?? []).map((x: { id: number; topic: string }) => ({ id: x.id, topic: x.topic })));
-    } catch {
-      // dropdown ide gagal — tetap bisa tulis manual
     }
   }, []);
 
