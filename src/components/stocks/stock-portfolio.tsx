@@ -40,6 +40,11 @@ function fmtRp(n: number): string {
   return "Rp" + Math.round(n).toLocaleString("id-ID");
 }
 
+/** Angka polos (tanpa Rp) — dipakai di list portofolio (gaya Stockbit). */
+function fmtNum(n: number): string {
+  return Math.round(n).toLocaleString("id-ID");
+}
+
 /** Section Portofolio — posisi saham dimiliki + nilai pasar + P/L. */
 export function StockPortfolio() {
   const [positions, setPositions] = React.useState<Position[]>([]);
@@ -137,54 +142,7 @@ export function StockPortfolio() {
 
   return (
     <div className="space-y-4">
-      {/* ── Ringkasan ── */}
-      <div className="grid grid-cols-1 grid-cols-2 gap-3 sm:grid-cols-4">
-        <div className="rounded-xl border border-border bg-card p-3.5 shadow-sm">
-          <p className="flex items-center gap-1 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">
-            <Wallet className="size-3 text-primary" /> Total modal
-          </p>
-          <p className="mt-1 text-lg font-bold leading-none">{fmtRp(summary?.totalCost ?? 0)}</p>
-          <p className="mt-0.5 text-[10px] text-muted-foreground">{positions.length} posisi</p>
-        </div>
-        <div className="rounded-xl border border-border bg-card p-3.5 shadow-sm">
-          <p className="flex items-center gap-1 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">
-            <PieChart className="size-3 text-indigo-500" /> Nilai pasar
-          </p>
-          <p className="mt-1 text-lg font-bold leading-none">{fmtRp(summary?.totalValue ?? 0)}</p>
-          <p className="mt-0.5 text-[10px] text-muted-foreground">harga terkini</p>
-        </div>
-        <div className="rounded-xl border border-border bg-card p-3.5 shadow-sm">
-          <p className="flex items-center gap-1 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">
-            <TrendingUp className="size-3 text-emerald-500" /> Untung (rugi)
-          </p>
-          <p
-            className={cn(
-              "mt-1 text-lg font-bold leading-none",
-              (summary?.unrealized ?? 0) >= 0 ? "text-emerald-500" : "text-rose-500"
-            )}
-          >
-            {(summary?.unrealized ?? 0) >= 0 ? "+" : "-"}
-            {fmtRp(Math.abs(summary?.unrealized ?? 0))}
-          </p>
-          <p className="mt-0.5 text-[10px] text-muted-foreground">
-            {(summary?.unrealizedPct ?? 0) >= 0 ? "+" : ""}
-            {(summary?.unrealizedPct ?? 0).toFixed(1)}%
-          </p>
-        </div>
-        <div className="rounded-xl border border-border bg-card p-3.5 shadow-sm">
-          <p className="flex items-center gap-1 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">
-            <Briefcase className="size-3 text-amber-500" /> Total lembar
-          </p>
-          <p className="mt-1 text-lg font-bold leading-none">
-            {positions.reduce((a, p) => a + p.shares, 0).toLocaleString("id-ID")}
-          </p>
-          <p className="mt-0.5 text-[10px] text-muted-foreground">
-            {positions.reduce((a, p) => a + p.lot, 0)} lot
-          </p>
-        </div>
-      </div>
-
-      {/* ── Form tambah (collapsible — tombol di header) ── */}
+      {/* ── Form tambah (paling atas — di bawah tab) ── */}
       <div className="rounded-xl border border-border bg-card shadow-sm">
         <button
           onClick={() => setFormOpen((o) => !o)}
@@ -244,6 +202,53 @@ export function StockPortfolio() {
         )}
       </div>
 
+      {/* ── Ringkasan ── */}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
+        <div className="rounded-xl border border-border bg-card p-3.5 shadow-sm">
+          <p className="flex items-center gap-1 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">
+            <Wallet className="size-3 text-primary" /> Total modal
+          </p>
+          <p className="mt-1 text-lg font-bold leading-none">{fmtRp(summary?.totalCost ?? 0)}</p>
+          <p className="mt-0.5 text-[10px] text-muted-foreground">{positions.length} posisi</p>
+        </div>
+        <div className="rounded-xl border border-border bg-card p-3.5 shadow-sm">
+          <p className="flex items-center gap-1 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">
+            <PieChart className="size-3 text-indigo-500" /> Nilai pasar
+          </p>
+          <p className="mt-1 text-lg font-bold leading-none">{fmtRp(summary?.totalValue ?? 0)}</p>
+          <p className="mt-0.5 text-[10px] text-muted-foreground">harga terkini</p>
+        </div>
+        <div className="rounded-xl border border-border bg-card p-3.5 shadow-sm">
+          <p className="flex items-center gap-1 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">
+            <TrendingUp className="size-3 text-emerald-500" /> Untung (rugi)
+          </p>
+          <p
+            className={cn(
+              "mt-1 text-lg font-bold leading-none",
+              (summary?.unrealized ?? 0) >= 0 ? "text-emerald-500" : "text-rose-500"
+            )}
+          >
+            {(summary?.unrealized ?? 0) >= 0 ? "+" : "-"}
+            {fmtRp(Math.abs(summary?.unrealized ?? 0))}
+          </p>
+          <p className="mt-0.5 text-[10px] text-muted-foreground">
+            {(summary?.unrealizedPct ?? 0) >= 0 ? "+" : ""}
+            {(summary?.unrealizedPct ?? 0).toFixed(1)}%
+          </p>
+        </div>
+        <div className="rounded-xl border border-border bg-card p-3.5 shadow-sm">
+          <p className="flex items-center gap-1 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">
+            <Briefcase className="size-3 text-amber-500" /> Total lembar
+          </p>
+          <p className="mt-1 text-lg font-bold leading-none">
+            {positions.reduce((a, p) => a + p.shares, 0).toLocaleString("id-ID")}
+          </p>
+          <p className="mt-0.5 text-[10px] text-muted-foreground">
+            {positions.reduce((a, p) => a + p.lot, 0)} lot
+          </p>
+        </div>
+      </div>
+
       {/* ── Tabel posisi (Stockbit Complete View — 4 kolom, 2 info per kolom) ── */}
       {loading ? (
         <div className="flex items-center gap-2 rounded-xl border border-border bg-card p-4 text-xs text-muted-foreground">
@@ -294,8 +299,8 @@ export function StockPortfolio() {
 
                 {/* Invested / Avg */}
                 <div className="text-right">
-                  <p className="text-xs font-semibold tabular-nums leading-tight">
-                    {fmtRp(cost)}
+                  <p className="text-xs tabular-nums leading-tight">
+                    {fmtNum(cost)}
                   </p>
                   <p className="text-[10px] tabular-nums leading-tight text-muted-foreground">
                     Avg {p.buyPrice.toLocaleString("id-ID")}
@@ -304,8 +309,8 @@ export function StockPortfolio() {
 
                 {/* Market / Current */}
                 <div className="text-right">
-                  <p className="text-xs font-semibold tabular-nums leading-tight">
-                    {fmtRp(value)}
+                  <p className="text-xs tabular-nums leading-tight">
+                    {fmtNum(value)}
                   </p>
                   <RupiahInput
                     ghost
@@ -320,12 +325,12 @@ export function StockPortfolio() {
                 <div className="text-right">
                   <p
                     className={cn(
-                      "text-xs font-bold tabular-nums leading-tight",
+                      "text-xs tabular-nums leading-tight",
                       pos ? "text-emerald-500" : "text-rose-500"
                     )}
                   >
                     {pos ? "+" : "-"}
-                    {fmtRp(Math.abs(pl))}
+                    {fmtNum(Math.abs(pl))}
                   </p>
                   <p
                     className={cn(
