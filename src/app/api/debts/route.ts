@@ -23,24 +23,34 @@ function computeStatus(amount: number, paid: number): "belum" | "sebagian" | "lu
 export async function GET() {
   const rows = db.select().from(debts).orderBy(desc(debts.date)).all();
 
-  const data = rows.map((r) => ({
-    id: r.id,
-    type: r.type,
-    party: r.party,
-    amount: r.amount,
-    paymentMode: r.paymentMode,
-    installmentCount: r.installmentCount,
-    installmentsPaid: r.installmentsPaid,
-    paidAmount: r.paidAmount,
-    date: r.date,
-    dueDate: r.dueDate ?? "",
-    status: r.status,
-    notes: r.notes ?? "",
-    /** Sisa yang belum dibayar */
-    remaining: Math.max(0, r.amount - r.paidAmount),
-    /** Progress % */
-    progressPct: r.amount > 0 ? Math.min(100, Math.round((r.paidAmount / r.amount) * 100)) : 100,
-  }));
+  const data = rows.map((r) => {
+    /** Mode cicilan: nominal terbayar dihitung dari jumlah cicilan (anti riba, tanpa bunga). */
+    const perCicilan =
+      r.paymentMode === "cicilan" && r.installmentCount > 0
+        ? Math.round(r.amount / r.installmentCount)
+        : 0;
+    const effectivePaid =
+      r.paymentMode === "cicilan" ? perCicilan * r.installmentsPaid : r.paidAmount;
+    return {
+      id: r.id,
+      type: r.type,
+      party: r.party,
+      amount: r.amount,
+      paymentMode: r.paymentMode,
+      installmentCount: r.installmentCount,
+      installmentsPaid: r.installmentsPaid,
+      paidAmount: r.paidAmount,
+      date: r.date,
+      dueDate: r.dueDate ?? "",
+      status: r.status,
+      notes: r.notes ?? "",
+      /** Sisa yang belum dibayar */
+      remaining: Math.max(0, r.amount - effectivePaid),
+      /** Progress % — mode cicilan berbasis cicilan terbayar, bukan paidAmount */
+      progressPct:
+        r.amount > 0 ? Math.min(100, Math.round((effectivePaid / r.amount) * 100)) : 100,
+    };
+  });
 
   // Ringkasan: total hutang & piutang (aktif = belum lunas)
   const summary = {

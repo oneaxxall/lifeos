@@ -359,9 +359,10 @@ export function DebtsWorkspace() {
               </p>
             </div>
           ) : (
-            <div className="space-y-2">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               {filtered.map((d) => {
                 const meta = STATUS_META[d.status];
+                const isHutang = d.type === "hutang";
                 const perCicilan =
                   d.paymentMode === "cicilan" && d.installmentCount > 0
                     ? Math.round(d.amount / d.installmentCount)
@@ -369,87 +370,126 @@ export function DebtsWorkspace() {
                 return (
                   <div
                     key={d.id}
-                    className="rounded-xl border border-border bg-card p-4 shadow-sm transition-colors hover:border-primary/30"
+                    className={cn(
+                      "group flex flex-col overflow-hidden rounded-xl border bg-card shadow-sm transition-colors hover:shadow-md",
+                      isHutang ? "border-rose-500/20 hover:border-rose-500/40" : "border-emerald-500/20 hover:border-emerald-500/40"
+                    )}
                   >
-                    <div className="flex flex-wrap items-center gap-3">
+                    {/* Header: tipe + status */}
+                    <div className={cn("flex items-center justify-between gap-2 px-4 py-2", isHutang ? "bg-rose-500/[0.06]" : "bg-emerald-500/[0.06]")}>
                       <span
                         className={cn(
-                          "inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-[10px] font-bold",
-                          d.type === "hutang"
+                          "inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-bold",
+                          isHutang
                             ? "bg-rose-500/10 text-rose-600 dark:text-rose-400"
                             : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
                         )}
                       >
-                        {d.type === "hutang" ? "🔴 HUTANG" : "🟢 PIUTANG"}
+                        {isHutang ? "🔴 HUTANG" : "🟢 PIUTANG"}
                       </span>
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-semibold">{d.party}</p>
-                        <p className="text-[10px] text-muted-foreground">
-                          mulai {format(new Date(d.date + "T00:00:00"), "d MMM yyyy", { locale: id })}
-                          {d.dueDate && (
-                            <>
-                              {" "}
-                              · jatuh tempo{" "}
-                              {format(new Date(d.dueDate + "T00:00:00"), "d MMM yyyy", { locale: id })}
-                            </>
-                          )}
-                          {d.notes && <> · {d.notes}</>}
-                        </p>
-                      </div>
                       <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-semibold", meta.className)}>
                         {meta.label}
                       </span>
-                      <div className="text-right">
-                        <p className="text-sm font-bold">{fmtRp(d.amount)}</p>
-                        <p className="text-[10px] text-muted-foreground">
-                          {d.paymentMode === "cicilan"
-                            ? `cicilan ${d.installmentsPaid}/${d.installmentCount} (${fmtRp(perCicilan)}/bulan)`
-                            : `bayar ${fmtRp(d.paidAmount)} dari ${fmtRp(d.amount)}`}
-                        </p>
+                    </div>
+
+                    {/* Isi */}
+                    <div className="flex-1 px-4 py-3">
+                      <p className="truncate text-sm font-semibold">{d.party}</p>
+                      <p className="mt-0.5 space-y-0.5 text-[10px] leading-relaxed text-muted-foreground">
+                        <span className="block">
+                          📅 Mulai {format(new Date(d.date + "T00:00:00"), "d MMM yyyy", { locale: id })}
+                        </span>
+                        {d.dueDate && (
+                          <span className="block">
+                            ⏰ Jatuh tempo {format(new Date(d.dueDate + "T00:00:00"), "d MMM yyyy", { locale: id })}
+                          </span>
+                        )}
+                      </p>
+
+                      {/* Angka: total & sisa */}
+                      <div className="mt-3 grid grid-cols-2 gap-2">
+                        <div className="rounded-lg bg-muted/40 px-2.5 py-2">
+                          <p className="text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">Total</p>
+                          <p className="mt-0.5 text-sm font-bold tabular-nums">{fmtRp(d.amount)}</p>
+                        </div>
+                        <div className={cn("rounded-lg px-2.5 py-2", isHutang ? "bg-rose-500/10" : "bg-emerald-500/10")}>
+                          <p className={cn("text-[9px] font-semibold uppercase tracking-wide", isHutang ? "text-rose-500" : "text-emerald-600 dark:text-emerald-400")}>
+                            Sisa
+                          </p>
+                          <p className="mt-0.5 text-sm font-bold tabular-nums">{fmtRp(d.remaining)}</p>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-1">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-8 gap-1 text-xs"
-                          disabled={d.status === "lunas"}
-                          onClick={() => setQuickPay({ item: d, amount: d.remaining })}
-                        >
-                          <HandCoins className="size-3.5" />
-                          {d.type === "hutang" ? "Bayar" : "Terima"}
-                        </Button>
-                        <Button variant="ghost" size="icon" className="size-8" onClick={() => openEdit(d)} aria-label={`Edit ${d.party}`}>
-                          <PencilLine className="size-3.5" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="size-8 text-muted-foreground hover:text-destructive"
-                          onClick={() => setDeleteTarget(d)}
-                          aria-label={`Hapus ${d.party}`}
-                        >
-                          <Trash2 className="size-3.5" />
-                        </Button>
+
+                      {/* Progress */}
+                      {d.status !== "lunas" && (
+                        <div className="mt-2.5 flex items-center gap-2">
+                          <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
+                            <div
+                              className={cn("h-full rounded-full", isHutang ? "bg-rose-500" : "bg-emerald-500")}
+                              style={{ width: `${d.progressPct}%` }}
+                            />
+                          </div>
+                          <span className="text-[10px] tabular-nums text-muted-foreground">
+                            {d.progressPct}%
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Detail mode */}
+                      <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[10px] text-muted-foreground">
+                        {d.paymentMode === "cicilan" ? (
+                          <>
+                            <span className="rounded-full bg-muted/60 px-1.5 py-0.5">
+                              Cicilan {d.installmentsPaid}/{d.installmentCount}
+                            </span>
+                            <span className="rounded-full bg-muted/60 px-1.5 py-0.5 tabular-nums">
+                              {fmtRp(perCicilan)}/bulan
+                            </span>
+                            <span className="rounded-full bg-muted/60 px-1.5 py-0.5 tabular-nums">
+                              Dibayar {fmtRp(d.paidAmount)}
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <span className="rounded-full bg-muted/60 px-1.5 py-0.5 tabular-nums">
+                              Dibayar {fmtRp(d.paidAmount)}
+                            </span>
+                            {d.notes && (
+                              <span className="rounded-full bg-muted/60 px-1.5 py-0.5">📝 {d.notes}</span>
+                            )}
+                          </>
+                        )}
+                        {d.paymentMode === "cicilan" && d.notes && (
+                          <span className="rounded-full bg-muted/60 px-1.5 py-0.5">📝 {d.notes}</span>
+                        )}
                       </div>
                     </div>
 
-                    {/* Progress */}
-                    {d.status !== "lunas" && (
-                      <div className="mt-2.5 flex items-center gap-2">
-                        <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
-                          <div
-                            className={cn(
-                              "h-full rounded-full",
-                              d.type === "hutang" ? "bg-rose-500" : "bg-emerald-500"
-                            )}
-                            style={{ width: `${d.progressPct}%` }}
-                          />
-                        </div>
-                        <span className="text-[10px] tabular-nums text-muted-foreground">
-                          {d.progressPct}% · sisa {fmtRp(d.remaining)}
-                        </span>
-                      </div>
-                    )}
+                    {/* Footer aksi */}
+                    <div className="flex items-center gap-1.5 border-t border-border/50 bg-muted/20 px-3 py-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-7 gap-1 text-[11px]"
+                        disabled={d.status === "lunas"}
+                        onClick={() => setQuickPay({ item: d, amount: d.remaining })}
+                      >
+                        <HandCoins className="size-3.5" />
+                        {isHutang ? "Bayar" : "Terima"}
+                      </Button>
+                      <Button variant="ghost" size="icon" className="size-7" onClick={() => openEdit(d)} aria-label={`Edit ${d.party}`}>
+                        <PencilLine className="size-3.5" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="ml-auto size-7 text-muted-foreground hover:text-destructive"
+                        onClick={() => setDeleteTarget(d)}
+                        aria-label={`Hapus ${d.party}`}
+                      >
+                        <Trash2 className="size-3.5" />
+                      </Button>
+                    </div>
                   </div>
                 );
               })}
