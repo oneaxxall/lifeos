@@ -211,6 +211,20 @@
       "when": 1785610420514,
       "tag": "0029_food-exercise",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "6",
+      "when": 1785613299372,
+      "tag": "0030_carousel",
+      "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "6",
+      "when": 1785617348715,
+      "tag": "0031_carousel-style",
+      "breakpoints": true
     }
   ]
 }

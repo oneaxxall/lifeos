@@ -529,6 +529,40 @@ export const exercisePrograms = sqliteTable("exercise_programs", {
   createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
 });
 
+/* ═══════════ Carousel Instagram (AI generate + canvas) ═══════════ */
+
+export const carousels = sqliteTable("carousels", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  /** Topik carousel */
+  topic: text("topic").notNull(),
+  /** Jumlah slide */
+  slideCount: integer("slide_count").notNull().default(5),
+  /** Tema warna (teal/emas/lavender/gelap/terang) */
+  theme: text("theme").notNull().default("teal"),
+  /** Sumber background (gambar/ai/gradient) */
+  bgSource: text("bg_source").notNull().default("ai"),
+  /** Gaya konten (ringkas/informatif) */
+  contentStyle: text("content_style").notNull().default("ringkas"),
+  /** Hasil AI (JSON: slides[{heading, points, emoji}], caption, hashtags, bgSpec) */
+  content: text("content").notNull(),
+  createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
+});
+
+/** Branding carousel (1 baris) — header/footer slide. */
+export const carouselSettings = sqliteTable("carousel_settings", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  /** Nama brand/akun */
+  brandName: text("brand_name").default("LifeOS"),
+  /** Handle Instagram */
+  handle: text("handle").default("@lifeos"),
+  /** Tagline singkat */
+  tagline: text("tagline").default(""),
+  /** Inisial logo (avatar lingkaran di canvas) */
+  initials: text("initials").default("L"),
+  /** Tampilkan branding di header/footer */
+  showBranding: integer("show_branding", { mode: "boolean" }).notNull().default(true),
+});
+
 /* ═══════════ Insight Cache (hasil analisa AI — persist SQLite) ═══════════ */
 
 export const insightCache = sqliteTable("insight_cache", {

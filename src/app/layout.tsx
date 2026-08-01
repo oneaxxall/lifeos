@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Literata, Geist_Mono } from "next/font/google";
+import { Inter, Literata, Playfair_Display, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ServiceWorkerRegister } from "@/components/layout/service-worker-register";
@@ -12,6 +12,13 @@ const inter = Inter({
 const literata = Literata({
   variable: "--font-literata",
   subsets: ["latin"],
+});
+
+/** Font heading carousel — serif mewah kontras tinggi (display). */
+const playfair = Playfair_Display({
+  variable: "--font-playfair",
+  subsets: ["latin"],
+  weight: ["600", "700", "800", "900"],
 });
 
 const geistMono = Geist_Mono({
@@ -62,7 +69,7 @@ export default function RootLayout({
     <html
       lang="id"
       suppressHydrationWarning
-      className={`${inter.variable} ${literata.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${inter.variable} ${literata.variable} ${playfair.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         <ThemeProvider

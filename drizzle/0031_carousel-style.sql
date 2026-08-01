@@ -1,0 +1,1 @@
+ALTER TABLE `carousels` ADD `content_style` text DEFAULT 'ringkas' NOT NULL;

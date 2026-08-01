@@ -12,6 +12,7 @@ import {
   Handshake,
   HeartPulse,
   Home,
+  Images,
   Library,
   Moon,
   NotebookPen,
@@ -88,6 +89,12 @@ export const navGroups: NavGroup[] = [
       { title: "Business", href: "/business", icon: Briefcase, description: "Bisnis & ide" },
       { title: "Networking", href: "/networking", icon: Handshake, description: "Relasi profesional" },
       { title: "Team", href: "/team", icon: UsersRound, description: "Manajemen tim" },
+    ],
+  },
+  {
+    label: "Karya",
+    items: [
+      { title: "Carousel", href: "/carousel", icon: Images, description: "Generator carousel Instagram AI" },
     ],
   },
   {
