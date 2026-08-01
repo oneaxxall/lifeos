@@ -426,7 +426,7 @@ export function StoriesWorkspace() {
                           )}
                         >
                           {/* Info stage: usia + fase, lalu bulan-tahun di baris sendiri */}
-                          <div className="min-w-0">
+                          <div className="min-w-0 flex-1">
                             <span className="flex items-center gap-1.5">
                               <span
                                 className={cn(
@@ -439,7 +439,7 @@ export function StoriesWorkspace() {
                               <span className="text-[9px] uppercase tracking-wide text-muted-foreground">thn</span>
                               <span
                                 className={cn(
-                                  "hidden rounded-full px-2 py-0.5 text-[9px] font-medium transition-colors sm:inline",
+                                  "rounded-full px-2 py-0.5 text-[9px] font-medium transition-colors",
                                   isActive ? "bg-primary/15 text-primary" : "bg-muted/60 text-muted-foreground group-hover/stage:bg-primary/10 group-hover/stage:text-primary"
                                 )}
                               >
@@ -447,7 +447,7 @@ export function StoriesWorkspace() {
                               </span>
                             </span>
                             {/* Bulan + tahun stage (baris sendiri — tidak terpotong) */}
-                            <span className="block text-[10px] font-medium text-muted-foreground/80 transition-colors group-hover/stage:text-primary/80">
+                            <span className="block whitespace-nowrap text-[10px] font-medium text-muted-foreground/80 transition-colors group-hover/stage:text-primary/80">
                               {stageDate(profile?.birthDate ?? "", age)}
                             </span>
                           </div>
@@ -464,9 +464,10 @@ export function StoriesWorkspace() {
                             <Link
                               href={`/stories/curhat?age=${age}`}
                               title={`AI Teman Curhat — usia ${age}`}
-                              className="inline-flex items-center gap-1 rounded-full border border-primary/20 bg-primary/5 px-2 py-0.5 text-[10px] font-medium text-primary transition-colors hover:bg-primary/15"
+                              className="inline-flex items-center gap-1 rounded-full border border-primary/20 bg-primary/5 p-1.5 text-[10px] font-medium text-primary transition-colors hover:bg-primary/15 sm:px-2 sm:py-0.5"
                             >
-                              <Sparkles className="size-3" /> Curhat
+                              <Sparkles className="size-3" />
+                              <span className="hidden sm:inline">Curhat</span>
                             </Link>
                             <ChevronDown
                               className={cn(
