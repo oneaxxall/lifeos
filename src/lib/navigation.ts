@@ -7,6 +7,7 @@ import {
   CheckSquare,
   Clock,
   DatabaseBackup,
+  Dumbbell,
   Flame,
   Handshake,
   HeartPulse,
@@ -21,6 +22,7 @@ import {
   TrendingUp,
   Users,
   UsersRound,
+  Utensils,
   Wallet,
   type LucideIcon,
 } from "lucide-react";
@@ -71,6 +73,8 @@ export const navGroups: NavGroup[] = [
     items: [
       { title: "Health", href: "/health", icon: HeartPulse, description: "Kesehatan fisik" },
       { title: "Mental", href: "/mental", icon: Brain, description: "Kesehatan mental" },
+      { title: "Food", href: "/food", icon: Utensils, description: "Resep & gizi dari AI" },
+      { title: "Exercise", href: "/exercise", icon: Dumbbell, description: "Training program AI" },
       { title: "Sick", href: "/sick", icon: Stethoscope, description: "Catatan tidak enak badan" },
       { title: "Bad Habit", href: "/habits", icon: Flame, description: "Kurangi kebiasaan buruk" },
     ],
