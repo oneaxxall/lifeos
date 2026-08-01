@@ -425,27 +425,32 @@ export function StoriesWorkspace() {
                               : "hover:bg-primary/5"
                           )}
                         >
-                          <span
-                            className={cn(
-                              "text-sm font-bold tabular-nums transition-colors",
-                              hasStories || isActive ? "text-primary" : "text-foreground group-hover/stage:text-primary"
-                            )}
-                          >
-                            {age}
-                          </span>
-                          <span className="text-[9px] uppercase tracking-wide text-muted-foreground">thn</span>
-                          <span
-                            className={cn(
-                              "hidden rounded-full px-2 py-0.5 text-[9px] font-medium transition-colors sm:inline",
-                              isActive ? "bg-primary/15 text-primary" : "bg-muted/60 text-muted-foreground group-hover/stage:bg-primary/10 group-hover/stage:text-primary"
-                            )}
-                          >
-                            {faseOf(age)}
-                          </span>
-                          {/* Bulan + tahun stage */}
-                          <span className="min-w-0 truncate text-[10px] font-medium text-muted-foreground/80 transition-colors group-hover/stage:text-primary/80">
-                            {stageDate(profile?.birthDate ?? "", age)}
-                          </span>
+                          {/* Info stage: usia + fase, lalu bulan-tahun di baris sendiri */}
+                          <div className="min-w-0">
+                            <span className="flex items-center gap-1.5">
+                              <span
+                                className={cn(
+                                  "text-sm font-bold tabular-nums transition-colors",
+                                  hasStories || isActive ? "text-primary" : "text-foreground group-hover/stage:text-primary"
+                                )}
+                              >
+                                {age}
+                              </span>
+                              <span className="text-[9px] uppercase tracking-wide text-muted-foreground">thn</span>
+                              <span
+                                className={cn(
+                                  "hidden rounded-full px-2 py-0.5 text-[9px] font-medium transition-colors sm:inline",
+                                  isActive ? "bg-primary/15 text-primary" : "bg-muted/60 text-muted-foreground group-hover/stage:bg-primary/10 group-hover/stage:text-primary"
+                                )}
+                              >
+                                {faseOf(age)}
+                              </span>
+                            </span>
+                            {/* Bulan + tahun stage (baris sendiri — tidak terpotong) */}
+                            <span className="block text-[10px] font-medium text-muted-foreground/80 transition-colors group-hover/stage:text-primary/80">
+                              {stageDate(profile?.birthDate ?? "", age)}
+                            </span>
+                          </div>
                           <div className={cn("flex shrink-0 items-center gap-1.5", isLeft ? "mr-auto" : "ml-auto")}>
                             {hasStories ? (
                               <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
