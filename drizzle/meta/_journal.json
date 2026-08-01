@@ -134,6 +134,13 @@
       "when": 1785524211576,
       "tag": "0018_daily-quotes",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "6",
+      "when": 1785562962247,
+      "tag": "0019_activities-manual",
+      "breakpoints": true
     }
   ]
 }

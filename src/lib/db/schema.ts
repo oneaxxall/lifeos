@@ -164,6 +164,10 @@ export const activities = sqliteTable("activities", {
   categoryId: integer("category_id").references(() => activityCategories.id, {
     onDelete: "set null",
   }),
+  /** Deskripsi/notes aktivitas (textarea) */
+  description: text("description").default(""),
+  /** Tags (JSON array string, mis. ["kerja","deep-work"]) */
+  tags: text("tags").default("[]"),
   /** Waktu mulai (ISO datetime) */
   startedAt: text("started_at").notNull(),
   /** Waktu selesai (ISO datetime) — null = masih berjalan */

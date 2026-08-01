@@ -18,6 +18,7 @@ import { TaskCard } from "@/components/todo/task-card";
 import { TaskDialog } from "@/components/todo/task-dialog";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { KANBAN_COLUMNS_CONFIG } from "@/components/todo/kanban-config";
+import { TodoFilterBar, applyTodoFilters, DEFAULT_FILTERS, type TodoFilters } from "@/components/todo/todo-filter";
 import type { Todo, TodoStatus } from "@/lib/db/schema";
 
 type Columns = Record<TodoStatus, Todo[]>;
@@ -41,6 +42,7 @@ export function KanbanBoard({ onChange }: { onChange?: () => void }) {
   const [breakdownTarget, setBreakdownTarget] = React.useState<Todo | null>(null);
   const [deleting, setDeleting] = React.useState(false);
   const [breakingDown, setBreakingDown] = React.useState(false);
+  const [filters, setFilters] = React.useState<TodoFilters>(DEFAULT_FILTERS);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
@@ -238,8 +240,27 @@ export function KanbanBoard({ onChange }: { onChange?: () => void }) {
     );
   }
 
+  const allTodos = KANBAN_COLUMNS_CONFIG.flatMap((c) => columns[c.status]);
+  const filteredColumns = KANBAN_COLUMNS_CONFIG.reduce(
+    (acc, c) => {
+      acc[c.status] = applyTodoFilters(columns[c.status], filters);
+      return acc;
+    },
+    { ...EMPTY_COLUMNS }
+  );
+  const visibleCount = KANBAN_COLUMNS_CONFIG.reduce((a, c) => a + filteredColumns[c.status].length, 0);
+
   return (
     <>
+      {/* Toolbar filter */}
+      <TodoFilterBar
+        filters={filters}
+        onChange={setFilters}
+        allTodos={allTodos}
+        visibleCount={visibleCount}
+        totalCount={allTodos.length}
+      />
+
       <DndContext
         sensors={sensors}
         collisionDetection={closestCorners}
@@ -252,7 +273,7 @@ export function KanbanBoard({ onChange }: { onChange?: () => void }) {
             <KanbanColumn
               key={col.status}
               status={col.status}
-              todos={columns[col.status]}
+              todos={filteredColumns[col.status]}
               onAdd={openAdd}
               onEdit={openEdit}
               onDelete={(t) => setDeleteTarget(t)}
