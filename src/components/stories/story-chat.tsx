@@ -248,7 +248,7 @@ export function StoryChat({ age: initialAge }: { age: number }) {
 
       <div className="grid gap-4 lg:grid-cols-[320px_1fr]">
         {/* ── Sidebar konteks: SEMUA info dari DB ── */}
-        <aside className="space-y-3 lg:max-h-[calc(100vh-220px)] lg:overflow-y-auto lg:pr-1">
+        <aside className="min-w-0 space-y-3 lg:max-h-[calc(100vh-220px)] lg:overflow-y-auto lg:pr-1">
           {/* Profil hidup — nilai tampil langsung, sisanya collapsible (privasi) */}
           {profile?.birthDate && (
             <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
@@ -380,10 +380,10 @@ export function StoryChat({ age: initialAge }: { age: number }) {
 
         {/* ── Chat window — tinggi FIXED agar inner scroll bekerja; keyboard-aware di mobile ── */}
         <div
-          className="flex h-[60dvh] flex-col overflow-hidden rounded-xl border border-border bg-card shadow-sm lg:h-[calc(100vh-220px)]"
+          className="flex h-[60dvh] min-w-0 flex-col overflow-hidden rounded-xl border border-border bg-card shadow-sm lg:h-[calc(100vh-220px)]"
           style={kbInset > 0 ? { height: `calc(${window.innerHeight - kbInset - 170}px)` } : undefined}
         >
-          <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto p-4">
+          <div ref={scrollRef} className="min-w-0 flex-1 space-y-3 overflow-x-hidden overflow-y-auto p-4">
             {loading ? (
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <Loader2 className="size-3.5 animate-spin" /> Memuat riwayat…
@@ -426,7 +426,7 @@ export function StoryChat({ age: initialAge }: { age: number }) {
                       </div>
                       <div
                         className={cn(
-                          "whitespace-pre-wrap rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed",
+                          "min-w-0 max-w-[75%] break-words whitespace-pre-wrap rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed [overflow-wrap:anywhere]",
                           isUser
                             ? "rounded-br-sm bg-primary/15 text-primary"
                             : "rounded-bl-sm bg-muted/40"
