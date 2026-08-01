@@ -40,6 +40,7 @@ export function useInsightPanel<T>(
   const [fetched, setFetched] = React.useState(false);
   const [stale, setStale] = React.useState(false);
   const [tick, setTick] = React.useState(0);
+  const [forceFresh, setForceFresh] = React.useState(false);
   // Kombinasi trigger terakhir yang sudah di-fetch (hindari refetch saat buka-tutup)
   const lastFetchRef = React.useRef<{ key: number; tick: number } | null>(null);
 
@@ -49,11 +50,12 @@ export function useInsightPanel<T>(
     const trigger = { key: refreshKey, tick };
     // Penanda disimpan SETELAH fetch sukses (bukan sebelum) — agar StrictMode
     // (dev: effect jalan 2x, fetch pertama di-cancel) tetap memicu fetch ulang.
-    if (lastFetchRef.current && lastFetchRef.current.key === trigger.key && lastFetchRef.current.tick === trigger.tick) {
+    if (!forceFresh && lastFetchRef.current && lastFetchRef.current.key === trigger.key && lastFetchRef.current.tick === trigger.tick) {
       return; // sudah dimuat untuk trigger ini (buka-tutup tidak refetch)
     }
     let cancelled = false;
-    fetch(endpoint, { method: "POST" })
+    // reload() → force fresh (lewati cache server 15 menit)
+    fetch(endpoint + (forceFresh ? "?fresh=1" : ""), { method: "POST" })
       .then((r) => r.json())
       .then((json) => {
         if (cancelled) return;
@@ -64,16 +66,22 @@ export function useInsightPanel<T>(
         }
         lastFetchRef.current = trigger; // tandai sukses — hindari refetch buka-tutup
         setFetched(true);
+        setForceFresh(false);
       })
       .catch(() => {
-        if (!cancelled) setFetched(true);
+        if (!cancelled) {
+          setFetched(true);
+          setForceFresh(false);
+        }
       });
     return () => {
       cancelled = true;
     };
-  }, [endpoint, collapsed, refreshKey, tick]);
+  }, [endpoint, collapsed, refreshKey, tick, forceFresh]);
 
   const reload = React.useCallback(() => {
+    // Force fresh: bypass cache server (analisa ulang sekarang)
+    setForceFresh(true);
     setTick((t) => t + 1);
   }, []);
 

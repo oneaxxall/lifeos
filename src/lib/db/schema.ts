@@ -505,6 +505,17 @@ export const habitLogs = sqliteTable("habit_logs", {
     .default(sql`(datetime('now'))`),
 });
 
+/* ═══════════ Insight Cache (hasil analisa AI — persist SQLite) ═══════════ */
+
+export const insightCache = sqliteTable("insight_cache", {
+  /** Key unik per route + tanggal (mis. "finance:2026-08-01") */
+  key: text("key").primaryKey(),
+  /** Hasil analisa (JSON string) */
+  value: text("value").notNull(),
+  /** Waktu dibuat (UTC) — TTL 15 menit diverifikasi di kode */
+  createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
+});
+
 /* ═══════════ Quotes Harian (dashboard slider) ═══════════ */
 
 export const dailyQuotes = sqliteTable("daily_quotes", {

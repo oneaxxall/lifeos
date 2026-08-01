@@ -8,6 +8,7 @@ import {
   CreditCard,
   Lightbulb,
   Loader2,
+  RefreshCcw,
   Repeat,
   TrendingDown,
 } from "lucide-react";
@@ -33,7 +34,7 @@ const SARAN_META = {
 
 /** Panel analisa keuangan AI — pemborosan, subscription, kebiasaan (FIN-06/07/08). Collapsible. */
 export function FinanceInsightPanel({ refreshKey }: Props) {
-  const { data, source, loading, collapsed, setCollapsed, fetched } =
+  const { data, source, loading, collapsed, setCollapsed, fetched, reload } =
     useInsightPanel<FinanceInsight>("/api/finance/analyze", refreshKey, true);
 
   if (loading && !data) {
@@ -82,6 +83,17 @@ export function FinanceInsightPanel({ refreshKey }: Props) {
             {data?.ringkasan ?? "Klik untuk menganalisa"}
           </p>
         </div>
+        {/* Analisa ulang — force refresh (lewati cache 15 menit) */}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => reload()}
+          aria-label="Analisa ulang"
+          title="Analisa ulang sekarang (lewati cache)"
+          className="size-7 shrink-0 text-muted-foreground hover:text-primary"
+        >
+          <RefreshCcw className="size-3.5" />
+        </Button>
       </div>
 
       {/* Isi */}
