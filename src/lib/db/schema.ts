@@ -524,6 +524,25 @@ export const dailyQuotes = sqliteTable("daily_quotes", {
     .default(sql`(datetime('now'))`),
 });
 
+/* ═══════════ Pomodoro Technique ═══════════ */
+
+export const pomodoroSessions = sqliteTable("pomodoro_sessions", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  /** Tanggal sesi (YYYY-MM-DD) */
+  date: text("date").notNull(),
+  /** Durasi fokus sesi ini (menit) */
+  durationMinutes: integer("duration_minutes").notNull().default(25),
+  /** Siklus ke berapa hari itu (1,2,3…) */
+  cycle: integer("cycle").notNull().default(1),
+  /** Label tugas/konteks (opsional) */
+  task: text("task").default(""),
+  /** Selesai penuh atau di-skip */
+  completed: integer("completed", { mode: "boolean" }).notNull().default(true),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+});
+
 /* ═══════════ Insight Feedback (AI belajar) ═══════════ */
 
 export const insightFeedback = sqliteTable("insight_feedback", {
@@ -584,3 +603,4 @@ export type Insight = typeof insights.$inferSelect;
 export type BadHabit = typeof badHabits.$inferSelect;
 export type HabitLog = typeof habitLogs.$inferSelect;
 export type DailyQuote = typeof dailyQuotes.$inferSelect;
+export type PomodoroSession = typeof pomodoroSessions.$inferSelect;

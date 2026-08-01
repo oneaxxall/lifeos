@@ -141,6 +141,13 @@
       "when": 1785562962247,
       "tag": "0019_activities-manual",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "6",
+      "when": 1785564653395,
+      "tag": "0020_pomodoro",
+      "breakpoints": true
     }
   ]
 }
