@@ -47,3 +47,6 @@ planning/
 todos/
 data/
 SOUL.md
+# Tapi jangan ignore folder "todos" milik kode (src/app/api/todos/ — route API Todo)
+!src/app/api/todos/
+!src/app/api/todos/**
