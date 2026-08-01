@@ -5,6 +5,7 @@ import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import {
   ChevronDown,
+  ChevronRight,
   Loader2,
   MessageSquareText,
   Search,
@@ -62,6 +63,7 @@ export function ContentScriptsPanel() {
   const [generating, setGenerating] = React.useState(false);
   const [deleteTarget, setDeleteTarget] = React.useState<ScriptItem | null>(null);
   const [deleting, setDeleting] = React.useState(false);
+  const [openId, setOpenId] = React.useState<number | null>(null);
   const [query, setQuery] = React.useState("");
   const [durFilter, setDurFilter] = React.useState("semua");
   const [sort, setSort] = React.useState<"terbaru" | "terlama">("terbaru");
@@ -303,10 +305,14 @@ export function ContentScriptsPanel() {
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((item) => {
             const data = parseScript(item.script);
+            const open = openId === item.id;
             return (
               <div key={item.id} className="flex flex-col overflow-hidden rounded-xl border border-border/60 bg-card shadow-sm transition-colors hover:border-primary/20 hover:shadow-md">
                 {/* Header */}
-                <div className="flex items-center gap-2.5 border-b border-border/40 bg-muted/20 px-3.5 py-2.5">
+                <button
+                  onClick={() => setOpenId(open ? null : item.id)}
+                  className="flex w-full items-center gap-2.5 border-b border-border/40 bg-muted/20 px-3.5 py-2.5 text-left"
+                >
                   <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
                     <MessageSquareText className="size-3.5" />
                   </span>
@@ -319,36 +325,61 @@ export function ContentScriptsPanel() {
                   <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[9px] font-semibold text-primary">
                     ⏱ {item.duration}s
                   </span>
-                </div>
+                  {open ? <ChevronDown className="size-4 shrink-0 text-muted-foreground" /> : <ChevronRight className="size-4 shrink-0 text-muted-foreground" />}
+                </button>
 
-                {/* Isi: skrip */}
-                <div className="flex-1 space-y-1.5 px-3.5 py-3">
-                  {data?.skrip.map((s, i) => (
-                    <div key={i} className="rounded-lg border border-border/50 bg-muted/20 px-2.5 py-1.5">
-                      <span className={cn("rounded px-1.5 py-0.5 text-[8px] font-bold uppercase", BAGIAN_STYLE[s.bagian] ?? "bg-muted text-muted-foreground")}>
-                        {s.bagian}
+                {/* Preview ringkas saat tertutup */}
+                {!open && data && data.skrip[0] && (
+                  <div className="flex-1 px-3.5 py-3">
+                    <div className="rounded-lg border border-border/50 bg-muted/20 px-2.5 py-2">
+                      <span className={cn("rounded px-1.5 py-0.5 text-[8px] font-bold uppercase", BAGIAN_STYLE[data.skrip[0].bagian] ?? "bg-muted text-muted-foreground")}>
+                        {data.skrip[0].bagian}
                       </span>
-                      <p className="mt-1 line-clamp-3 text-[10px] leading-relaxed text-foreground/85">{s.teks}</p>
+                      <p className="mt-1 line-clamp-2 text-[10px] leading-relaxed text-foreground/85">{data.skrip[0].teks}</p>
                     </div>
-                  ))}
-                  {data && (
-                    <>
-                      <div className="rounded-lg bg-muted/20 px-2.5 py-1.5">
-                        <p className="text-[8px] font-bold uppercase tracking-wide text-muted-foreground">Caption</p>
-                        <p className="mt-0.5 line-clamp-2 text-[10px] leading-relaxed text-muted-foreground">{data.caption}</p>
+                    <p className="mt-1.5 line-clamp-1 text-[9px] text-primary/60">{data.hashtags.slice(0, 6).join(" ")}</p>
+                  </div>
+                )}
+
+                {/* Detail lengkap (saat terbuka) */}
+                {open && (
+                  <div className="flex-1 space-y-1.5 px-3.5 py-3">
+                    {data?.skrip.map((s, i) => (
+                      <div key={i} className="rounded-lg border border-border/50 bg-muted/20 px-2.5 py-1.5">
+                        <span className={cn("rounded px-1.5 py-0.5 text-[8px] font-bold uppercase", BAGIAN_STYLE[s.bagian] ?? "bg-muted text-muted-foreground")}>
+                          {s.bagian}
+                        </span>
+                        <p className="mt-1 text-[10px] leading-relaxed text-foreground/85">{s.teks}</p>
                       </div>
-                      <p className="line-clamp-2 text-[9px] leading-relaxed text-primary/60">{data.hashtags.slice(0, 8).join(" ")}</p>
-                    </>
-                  )}
-                </div>
+                    ))}
+                    {data && (
+                      <>
+                        <div className="rounded-lg bg-muted/20 px-2.5 py-1.5">
+                          <p className="text-[8px] font-bold uppercase tracking-wide text-muted-foreground">Caption</p>
+                          <p className="mt-0.5 text-[10px] leading-relaxed text-muted-foreground">{data.caption}</p>
+                        </div>
+                        <p className="text-[9px] leading-relaxed text-primary/60">{data.hashtags.join(" ")}</p>
+                      </>
+                    )}
+                  </div>
+                )}
 
                 {/* Footer */}
                 <div className="flex items-center border-t border-border/50 bg-muted/20 px-3 py-1.5">
                   <span className="text-[10px] text-muted-foreground">{data?.skrip.length ?? 0} bagian skrip</span>
                   <Button
                     variant="ghost"
+                    size="sm"
+                    className="ml-auto h-6 gap-1 text-[11px] text-primary hover:text-primary"
+                    onClick={() => setOpenId(open ? null : item.id)}
+                  >
+                    {open ? "Tutup" : "Lihat naskah"}
+                    {open ? <ChevronDown className="size-3" /> : <ChevronRight className="size-3" />}
+                  </Button>
+                  <Button
+                    variant="ghost"
                     size="icon"
-                    className="ml-auto size-6 text-muted-foreground hover:text-destructive"
+                    className="size-6 text-muted-foreground hover:text-destructive"
                     onClick={() => setDeleteTarget(item)}
                     aria-label="Hapus naskah"
                   >

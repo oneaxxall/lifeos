@@ -5,6 +5,7 @@ import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import {
   ChevronDown,
+  ChevronRight,
   Eye,
   Loader2,
   MousePointerClick,
@@ -83,6 +84,7 @@ export function AffiliateProductsPanel() {
   const [saving, setSaving] = React.useState(false);
   const [deleteTarget, setDeleteTarget] = React.useState<ProductItem | null>(null);
   const [deleting, setDeleting] = React.useState(false);
+  const [openId, setOpenId] = React.useState<number | null>(null);
   const [query, setQuery] = React.useState("");
   const [statusFilter, setStatusFilter] = React.useState("semua");
   const [marketFilter, setMarketFilter] = React.useState("semua");
@@ -335,21 +337,26 @@ export function AffiliateProductsPanel() {
           {filtered.map((item) => {
             const analysis = parseAnalysis(item.analysis);
             const estKomisi = Math.round((item.price * item.commissionPct) / 100);
+            const open = openId === item.id;
             return (
               <div key={item.id} className="flex flex-col overflow-hidden rounded-xl border border-border/60 bg-card shadow-sm transition-colors hover:border-primary/20 hover:shadow-md">
                 {/* Header */}
-                <div className="flex items-center gap-2.5 border-b border-border/40 bg-muted/20 px-3.5 py-2.5">
+                <button
+                  onClick={() => setOpenId(open ? null : item.id)}
+                  className="flex w-full items-center gap-2.5 border-b border-border/40 bg-muted/20 px-3.5 py-2.5 text-left"
+                >
                   <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
                     <ShoppingBag className="size-3.5" />
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate text-xs font-semibold break-words [overflow-wrap:anywhere]">{item.product}</span>
+                    <span className="block text-xs font-semibold break-words [overflow-wrap:anywhere]">{item.product}</span>
                     <span className="block text-[9px] text-muted-foreground">
                       {format(new Date(item.createdAt.replace(" ", "T") + "Z"), "d MMM yyyy", { locale: id })} · {MARKET_LABEL[item.marketplace]}
                     </span>
                   </span>
                   <select
                     value={item.status}
+                    onClick={(e) => e.stopPropagation()}
                     onChange={(e) => void patch(item.id, { status: e.target.value })}
                     className={cn("h-6 rounded-full border-0 px-1.5 text-[9px] font-semibold", STATUS_META[item.status]?.cls)}
                   >
@@ -359,91 +366,103 @@ export function AffiliateProductsPanel() {
                       </option>
                     ))}
                   </select>
-                </div>
+                  {open ? <ChevronDown className="size-4 shrink-0 text-muted-foreground" /> : <ChevronRight className="size-4 shrink-0 text-muted-foreground" />}
+                </button>
 
-                {/* Isi */}
-                <div className="flex-1 px-3.5 py-3">
-                  {/* Harga + komisi */}
-                  <div className="grid grid-cols-2 gap-1.5">
-                    <div className="rounded-lg bg-muted/40 px-2.5 py-1.5">
-                      <p className="text-[8px] font-semibold uppercase tracking-wide text-muted-foreground">Harga</p>
-                      <p className="text-xs font-bold tabular-nums">Rp{item.price.toLocaleString("id-ID")}</p>
+                {/* Preview ringkas saat tertutup */}
+                {!open && (
+                  <div className="flex-1 px-3.5 py-3">
+                    <div className="grid grid-cols-2 gap-1.5">
+                      <div className="rounded-lg bg-muted/40 px-2.5 py-1.5">
+                        <p className="text-[8px] font-semibold uppercase tracking-wide text-muted-foreground">Harga</p>
+                        <p className="text-xs font-bold tabular-nums">Rp{item.price.toLocaleString("id-ID")}</p>
+                      </div>
+                      <div className="rounded-lg bg-emerald-500/10 px-2.5 py-1.5">
+                        <p className="text-[8px] font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-400">Komisi {item.commissionPct}%</p>
+                        <p className="text-xs font-bold tabular-nums text-emerald-600 dark:text-emerald-400">± Rp{estKomisi.toLocaleString("id-ID")}</p>
+                      </div>
                     </div>
-                    <div className="rounded-lg bg-emerald-500/10 px-2.5 py-1.5">
-                      <p className="text-[8px] font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-400">Komisi {item.commissionPct}%</p>
-                      <p className="text-xs font-bold tabular-nums text-emerald-600 dark:text-emerald-400">± Rp{estKomisi.toLocaleString("id-ID")}</p>
-                    </div>
+                    {analysis && (
+                      <p className="mt-1.5 line-clamp-1 text-[9px] leading-relaxed text-muted-foreground">
+                        🎯 {analysis.targetAudiens}
+                      </p>
+                    )}
                   </div>
+                )}
 
-                  {/* Analisa AI */}
-                  {analysis && (
-                    <div className="mt-2 space-y-1.5 rounded-lg border border-border/50 bg-muted/20 p-2.5">
-                      <p className="text-[9px] leading-relaxed text-muted-foreground">
-                        <span className="font-semibold text-foreground/80">🎯 Audiens:</span> {analysis.targetAudiens}
-                      </p>
-                      <p className="text-[9px] leading-relaxed text-muted-foreground">
-                        <span className="font-semibold text-foreground/80">🎬 Angle:</span> {analysis.angleKonten}
-                      </p>
-                      <p className="text-[9px] leading-relaxed text-muted-foreground">
-                        <span className="font-semibold text-foreground/80">💰 Estimasi:</span> {analysis.estimasiKomisi}
-                      </p>
+                {/* Detail lengkap (saat terbuka) */}
+                {open && (
+                  <div className="flex-1 px-3.5 py-3">
+                    {/* Analisa AI */}
+                    {analysis && (
+                      <div className="space-y-1.5 rounded-lg border border-border/50 bg-muted/20 p-2.5">
+                        <p className="text-[9px] leading-relaxed text-muted-foreground">
+                          <span className="font-semibold text-foreground/80">🎯 Audiens:</span> {analysis.targetAudiens}
+                        </p>
+                        <p className="text-[9px] leading-relaxed text-muted-foreground">
+                          <span className="font-semibold text-foreground/80">🎬 Angle:</span> {analysis.angleKonten}
+                        </p>
+                        <p className="text-[9px] leading-relaxed text-muted-foreground">
+                          <span className="font-semibold text-foreground/80">💰 Estimasi:</span> {analysis.estimasiKomisi}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Performa */}
+                    <div className="mt-2 grid grid-cols-3 gap-1.5">
+                      <label className="block">
+                        <span className="flex items-center gap-1 text-[8px] font-semibold uppercase text-muted-foreground">
+                          <Eye className="size-2.5" /> Views
+                        </span>
+                        <input
+                          type="number"
+                          value={item.views || ""}
+                          placeholder="0"
+                          onChange={(e) => void patch(item.id, { views: Number(e.target.value) || 0 })}
+                          className="mt-0.5 h-6 w-full rounded border border-border/60 bg-background px-1.5 text-[10px] tabular-nums outline-none focus:border-primary/50"
+                        />
+                      </label>
+                      <label className="block">
+                        <span className="flex items-center gap-1 text-[8px] font-semibold uppercase text-muted-foreground">
+                          <ThumbsUp className="size-2.5" /> Likes
+                        </span>
+                        <input
+                          type="number"
+                          value={item.likes || ""}
+                          placeholder="0"
+                          onChange={(e) => void patch(item.id, { likes: Number(e.target.value) || 0 })}
+                          className="mt-0.5 h-6 w-full rounded border border-border/60 bg-background px-1.5 text-[10px] tabular-nums outline-none focus:border-primary/50"
+                        />
+                      </label>
+                      <label className="block">
+                        <span className="flex items-center gap-1 text-[8px] font-semibold uppercase text-muted-foreground">
+                          <MousePointerClick className="size-2.5" /> Klik
+                        </span>
+                        <input
+                          type="number"
+                          value={item.clicks || ""}
+                          placeholder="0"
+                          onChange={(e) => void patch(item.id, { clicks: Number(e.target.value) || 0 })}
+                          className="mt-0.5 h-6 w-full rounded border border-border/60 bg-background px-1.5 text-[10px] tabular-nums outline-none focus:border-primary/50"
+                        />
+                      </label>
                     </div>
-                  )}
 
-                  {/* Performa */}
-                  <div className="mt-2 grid grid-cols-3 gap-1.5">
-                    <label className="block">
-                      <span className="flex items-center gap-1 text-[8px] font-semibold uppercase text-muted-foreground">
-                        <Eye className="size-2.5" /> Views
-                      </span>
+                    {/* Komisi diterima */}
+                    <div className="mt-2 rounded-lg border border-emerald-500/30 bg-emerald-500/[0.06] px-2.5 py-1.5">
+                      <p className="flex items-center gap-1 text-[8px] font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-400">
+                        <Wallet className="size-2.5" /> Komisi diterima
+                      </p>
                       <input
                         type="number"
-                        value={item.views || ""}
+                        value={item.commissionReceived || ""}
                         placeholder="0"
-                        onChange={(e) => void patch(item.id, { views: Number(e.target.value) || 0 })}
-                        className="mt-0.5 h-6 w-full rounded border border-border/60 bg-background px-1.5 text-[10px] tabular-nums outline-none focus:border-primary/50"
+                        onChange={(e) => void patch(item.id, { commissionReceived: Number(e.target.value) || 0 })}
+                        className="mt-0.5 h-6 w-full rounded border border-emerald-500/30 bg-background px-1.5 text-[10px] font-semibold tabular-nums text-emerald-600 dark:text-emerald-400 outline-none focus:border-primary/50"
                       />
-                    </label>
-                    <label className="block">
-                      <span className="flex items-center gap-1 text-[8px] font-semibold uppercase text-muted-foreground">
-                        <ThumbsUp className="size-2.5" /> Likes
-                      </span>
-                      <input
-                        type="number"
-                        value={item.likes || ""}
-                        placeholder="0"
-                        onChange={(e) => void patch(item.id, { likes: Number(e.target.value) || 0 })}
-                        className="mt-0.5 h-6 w-full rounded border border-border/60 bg-background px-1.5 text-[10px] tabular-nums outline-none focus:border-primary/50"
-                      />
-                    </label>
-                    <label className="block">
-                      <span className="flex items-center gap-1 text-[8px] font-semibold uppercase text-muted-foreground">
-                        <MousePointerClick className="size-2.5" /> Klik
-                      </span>
-                      <input
-                        type="number"
-                        value={item.clicks || ""}
-                        placeholder="0"
-                        onChange={(e) => void patch(item.id, { clicks: Number(e.target.value) || 0 })}
-                        className="mt-0.5 h-6 w-full rounded border border-border/60 bg-background px-1.5 text-[10px] tabular-nums outline-none focus:border-primary/50"
-                      />
-                    </label>
+                    </div>
                   </div>
-
-                  {/* Komisi diterima */}
-                  <div className="mt-2 rounded-lg border border-emerald-500/30 bg-emerald-500/[0.06] px-2.5 py-1.5">
-                    <p className="flex items-center gap-1 text-[8px] font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-400">
-                      <Wallet className="size-2.5" /> Komisi diterima
-                    </p>
-                    <input
-                      type="number"
-                      value={item.commissionReceived || ""}
-                      placeholder="0"
-                      onChange={(e) => void patch(item.id, { commissionReceived: Number(e.target.value) || 0 })}
-                      className="mt-0.5 h-6 w-full rounded border border-emerald-500/30 bg-background px-1.5 text-[10px] font-semibold tabular-nums text-emerald-600 dark:text-emerald-400 outline-none focus:border-primary/50"
-                    />
-                  </div>
-                </div>
+                )}
 
                 {/* Footer */}
                 <div className="flex items-center border-t border-border/50 bg-muted/20 px-3 py-1.5">
@@ -454,14 +473,23 @@ export function AffiliateProductsPanel() {
                       rel="noreferrer"
                       className="text-[10px] font-medium text-primary hover:underline"
                     >
-                      🔗 Link affiliate
+                      🔗 Link
                     </a>
                   )}
                   {!item.link && <span className="text-[10px] text-muted-foreground">Tanpa link</span>}
                   <Button
                     variant="ghost"
+                    size="sm"
+                    className="ml-auto h-6 gap-1 text-[11px] text-primary hover:text-primary"
+                    onClick={() => setOpenId(open ? null : item.id)}
+                  >
+                    {open ? "Tutup" : "Detail & performa"}
+                    {open ? <ChevronDown className="size-3" /> : <ChevronRight className="size-3" />}
+                  </Button>
+                  <Button
+                    variant="ghost"
                     size="icon"
-                    className="ml-auto size-6 text-muted-foreground hover:text-destructive"
+                    className="size-6 text-muted-foreground hover:text-destructive"
                     onClick={() => setDeleteTarget(item)}
                     aria-label="Hapus produk"
                   >

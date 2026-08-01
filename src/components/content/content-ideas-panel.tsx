@@ -5,6 +5,7 @@ import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import {
   ChevronDown,
+  ChevronRight,
   Lightbulb,
   Loader2,
   Search,
@@ -57,6 +58,7 @@ export function ContentIdeasPanel() {
   const [generating, setGenerating] = React.useState(false);
   const [deleteTarget, setDeleteTarget] = React.useState<IdeaItem | null>(null);
   const [deleting, setDeleting] = React.useState(false);
+  const [openId, setOpenId] = React.useState<number | null>(null);
   const [query, setQuery] = React.useState("");
   const [statusFilter, setStatusFilter] = React.useState("semua");
   const [sort, setSort] = React.useState<"terbaru" | "terlama">("terbaru");
@@ -279,6 +281,7 @@ export function ContentIdeasPanel() {
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((item) => {
             const data = parseIdeas(item.ideas);
+            const open = openId === item.id;
             return (
               <div key={item.id} className="flex flex-col overflow-hidden rounded-xl border border-border/60 bg-card shadow-sm transition-colors hover:border-primary/20 hover:shadow-md">
                 {/* Header */}
@@ -294,6 +297,7 @@ export function ContentIdeasPanel() {
                   </span>
                   <select
                     value={item.status}
+                    onClick={(e) => e.stopPropagation()}
                     onChange={(e) => void updateStatus(item, e.target.value as IdeaItem["status"])}
                     className={cn("h-6 rounded-full border-0 px-1.5 text-[9px] font-semibold", STATUS_META[item.status].cls)}
                   >
@@ -305,30 +309,58 @@ export function ContentIdeasPanel() {
                   </select>
                 </div>
 
-                {/* Isi: 5 hook */}
-                <div className="flex-1 space-y-2 px-3.5 py-3">
-                  {data?.ideas.map((idea, i) => (
-                    <div key={i} className="rounded-lg border border-border/50 bg-muted/20 px-2.5 py-2">
+                {/* Preview ringkas saat tertutup */}
+                {!open && data && data.ideas[0] && (
+                  <div className="flex-1 px-3.5 py-3">
+                    <div className="rounded-lg border border-border/50 bg-muted/20 px-2.5 py-2">
                       <p className="flex items-start gap-1.5 text-xs font-semibold">
                         <span className="flex size-4 shrink-0 items-center justify-center rounded-full bg-primary/15 text-[9px] font-bold text-primary">
-                          {i + 1}
+                          1
                         </span>
-                        <span className="leading-snug break-words [overflow-wrap:anywhere]">{idea.hook}</span>
+                        <span className="line-clamp-1 leading-snug break-words [overflow-wrap:anywhere]">{data.ideas[0].hook}</span>
                       </p>
-                      <p className="mt-1 line-clamp-3 text-[10px] leading-relaxed text-muted-foreground italic">
-                        &quot;{idea.hookLine}&quot;
+                      <p className="mt-1 line-clamp-1 text-[10px] leading-relaxed text-muted-foreground italic">
+                        &quot;{data.ideas[0].hookLine}&quot;
                       </p>
                     </div>
-                  ))}
-                </div>
+                  </div>
+                )}
+
+                {/* Isi: 5 hook (saat terbuka) */}
+                {open && (
+                  <div className="flex-1 space-y-2 px-3.5 py-3">
+                    {data?.ideas.map((idea, i) => (
+                      <div key={i} className="rounded-lg border border-border/50 bg-muted/20 px-2.5 py-2">
+                        <p className="flex items-start gap-1.5 text-xs font-semibold">
+                          <span className="flex size-4 shrink-0 items-center justify-center rounded-full bg-primary/15 text-[9px] font-bold text-primary">
+                            {i + 1}
+                          </span>
+                          <span className="leading-snug break-words [overflow-wrap:anywhere]">{idea.hook}</span>
+                        </p>
+                        <p className="mt-1 text-[10px] leading-relaxed text-muted-foreground italic">
+                          &quot;{idea.hookLine}&quot;
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
 
                 {/* Footer */}
                 <div className="flex items-center border-t border-border/50 bg-muted/20 px-3 py-1.5">
                   <span className="text-[10px] text-muted-foreground">{data?.ideas.length ?? 0} ide hook</span>
                   <Button
                     variant="ghost"
+                    size="sm"
+                    className="ml-auto h-6 gap-1 text-[11px] text-primary hover:text-primary"
+                    onClick={() => setOpenId(open ? null : item.id)}
+                  >
+                    {open ? "Tutup" : "Lihat ide"}
+                    {open ? <ChevronDown className="size-3" /> : <ChevronRight className="size-3" />}
+                  </Button>
+                  <Button
+                    variant="ghost"
                     size="icon"
-                    className="ml-auto size-6 text-muted-foreground hover:text-destructive"
+                    className="size-6 text-muted-foreground hover:text-destructive"
                     onClick={() => setDeleteTarget(item)}
                     aria-label="Hapus ide"
                   >
