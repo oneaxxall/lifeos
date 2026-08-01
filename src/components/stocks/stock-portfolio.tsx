@@ -202,8 +202,8 @@ export function StockPortfolio() {
         )}
       </div>
 
-      {/* ── Ringkasan ── */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
+      {/* ── Ringkasan (2 kolom — semua ukuran layar) ── */}
+      <div className="grid grid-cols-2 gap-2 sm:gap-3">
         <div className="rounded-xl border border-border bg-card p-3.5 shadow-sm">
           <p className="flex items-center gap-1 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">
             <Wallet className="size-3 text-primary" /> Total modal

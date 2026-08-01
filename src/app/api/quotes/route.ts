@@ -1,11 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
-import { generateQuotes, getQuotesByDate } from "@/lib/ai/quote-generator";
+import { generateQuotes, getAllQuotes, getQuotesByDate } from "@/lib/ai/quote-generator";
 
-/** GET /api/quotes?date=YYYY-MM-DD — quote hari itu (default hari ini). */
+/**
+ * GET /api/quotes?date=YYYY-MM-DD — quote hari itu (default hari ini).
+ * GET /api/quotes (tanpa date) — SEMUA riwayat quote (terbaru dulu).
+ */
 export async function GET(req: NextRequest) {
-  const date = req.nextUrl.searchParams.get("date") ?? undefined;
-  const quotes = getQuotesByDate(date);
-  return NextResponse.json({ data: quotes });
+  const date = req.nextUrl.searchParams.get("date");
+  if (date) {
+    const quotes = getQuotesByDate(date);
+    return NextResponse.json({ data: quotes });
+  }
+  const all = getAllQuotes();
+  return NextResponse.json({ data: all });
 }
 
 /** POST /api/quotes — generate & simpan quote hari ini (ganti yang lama). */

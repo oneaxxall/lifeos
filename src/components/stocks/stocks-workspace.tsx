@@ -96,7 +96,7 @@ function Stat({ label, value, className, sub }: { label: string; value: string; 
   );
 }
 
-/** Halaman Stocks Calculator — avg down, right issue, lot & fee + rencana tersimpan. */
+/** Halaman Stocks — portofolio, avg down, right issue, lot & fee + rencana tersimpan. */
 export function StocksWorkspace() {
   const [tab, setTab] = React.useState<Tab>("portfolio");
 
@@ -169,10 +169,10 @@ export function StocksWorkspace() {
     <div className="space-y-5">
       <header>
         <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight">
-          <BarChart3 className="size-6 text-primary" /> Stocks Calculator
+          <BarChart3 className="size-6 text-primary" /> Stocks
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Kalkulator saham: average down/up, right issue (HMETD), dan estimasi biaya broker.
+          Portofolio & kalkulator saham: average down/up, right issue (HMETD), dan estimasi biaya broker.
         </p>
       </header>
 

@@ -1,6 +1,6 @@
 import { generateText } from "ai";
 import { z } from "zod";
-import { asc, eq } from "drizzle-orm";
+import { asc, desc, eq } from "drizzle-orm";
 import { getModel } from "@/lib/ai/provider";
 import { buildSystemPrompt, buildUserPrompt } from "@/lib/ai/prompt-builder";
 import { db } from "@/lib/db";
@@ -143,6 +143,15 @@ export function getQuotesByDate(date?: string): Quote[] {
     .orderBy(asc(dailyQuotes.position))
     .all()
     .map((r) => ({ content: r.content, author: r.author ?? "" }));
+}
+
+/** Semua quote (riwayat lengkap — halaman Quotes), terbaru dulu. */
+export function getAllQuotes() {
+  return db
+    .select()
+    .from(dailyQuotes)
+    .orderBy(desc(dailyQuotes.date), asc(dailyQuotes.position))
+    .all();
 }
 
 /** Parse JSON dari output LLM — toleran thd markdown fence & bentuk array. */
