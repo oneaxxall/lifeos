@@ -1,5 +1,6 @@
 import {
   ArrowLeftRight,
+  BookHeart,
   Brain,
   Briefcase,
   Calculator,
@@ -75,6 +76,7 @@ export const navGroups: NavGroup[] = [
   {
     label: "Kehidupan",
     items: [
+      { title: "Life Story", href: "/stories", icon: BookHeart, description: "Kisah hidup per usia & AI curhat" },
       { title: "Family", href: "/family", icon: Users, description: "Keluarga" },
       { title: "Spiritual", href: "/spiritual", icon: Moon, description: "Ritual & refleksi" },
       { title: "Business", href: "/business", icon: Briefcase, description: "Bisnis & ide" },

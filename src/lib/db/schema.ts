@@ -589,6 +589,63 @@ export const financialPlans = sqliteTable("financial_plans", {
   updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
 });
 
+/* ═══════════ Life Profile (biodata hidup — akar Story of My Life) ═══════════ */
+
+export const lifeProfiles = sqliteTable("life_profile", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  /** Tanggal lahir (YYYY-MM-DD) — menentukan usia sekarang & stage timeline */
+  birthDate: text("birth_date").default(""),
+  /** Nilai-nilai yang dipedulikan */
+  values: text("values").default(""),
+  /** Luka masa kecil */
+  childhoodWounds: text("childhood_wounds").default(""),
+  /** Pola asuh orang tua */
+  parenting: text("parenting").default(""),
+  /** Siapa orang tua / keluarga inti */
+  family: text("family").default(""),
+  /** Catatan hidup lain */
+  lifeNotes: text("life_notes").default(""),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+  updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
+});
+
+/* ═══════════ Life Chats (riwayat AI curhat per stage usia) ═══════════ */
+
+export const lifeChats = sqliteTable("life_chats", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  /** Stage usia chat ini */
+  age: integer("age").notNull().default(1),
+  /** Peran: user | assistant */
+  role: text("role", { enum: ["user", "assistant"] }).notNull(),
+  /** Isi pesan */
+  content: text("content").notNull().default(""),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+});
+
+/* ═══════════ Life Stories (Story of My Life — stage umur) ═══════════ */
+
+export const lifeStories = sqliteTable("life_stories", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  /** Usia saat cerita terjadi (1–N) */
+  age: integer("age").notNull().default(1),
+  /** Judul cerita */
+  title: text("title").notNull().default(""),
+  /** Kategori: percintaan | konflik | keluarga | karier | pendidikan | pertemanan | kesehatan | lainnya */
+  category: text("category").notNull().default("lainnya"),
+  /** Aktor terlibat (nama, dipisah koma) */
+  actors: text("actors").default(""),
+  /** Isi cerita */
+  story: text("story").notNull().default(""),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+  updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
+});
+
 /* ═══════════ Hutang & Piutang (debt management) ═══════════ */
 
 export const debts = sqliteTable("debts", {
@@ -728,3 +785,6 @@ export type FinancialPlan = typeof financialPlans.$inferSelect;
 export type StockPlan = typeof stockPlans.$inferSelect;
 export type StockPosition = typeof stockPortfolio.$inferSelect;
 export type Debt = typeof debts.$inferSelect;
+export type LifeStory = typeof lifeStories.$inferSelect;
+export type LifeProfile = typeof lifeProfiles.$inferSelect;
+export type LifeChat = typeof lifeChats.$inferSelect;

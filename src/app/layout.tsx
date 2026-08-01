@@ -45,6 +45,8 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   viewportFit: "cover",
+  /** Resize viewport saat keyboard mobile terbuka → input tidak tertutup keyboard */
+  interactiveWidget: "resizes-content",
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#0d9488" },
     { media: "(prefers-color-scheme: dark)", color: "#0c0a09" },

@@ -176,6 +176,27 @@
       "when": 1785572389428,
       "tag": "0024_debts",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "6",
+      "when": 1785575111555,
+      "tag": "0025_life-stories",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "6",
+      "when": 1785575420660,
+      "tag": "0026_life-profile",
+      "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "6",
+      "when": 1785576007144,
+      "tag": "0027_life-chats",
+      "breakpoints": true
     }
   ]
 }
