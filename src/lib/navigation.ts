@@ -95,6 +95,7 @@ export const navGroups: NavGroup[] = [
     label: "Karya",
     items: [
       { title: "Carousel", href: "/carousel", icon: Images, description: "Generator carousel Instagram AI" },
+      { title: "Content", href: "/content", icon: Clapperboard, description: "TikTok affiliate: ide, naskah & tracker" },
     ],
   },
   {

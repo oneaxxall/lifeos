@@ -225,6 +225,13 @@
       "when": 1785617348715,
       "tag": "0031_carousel-style",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "6",
+      "when": 1785618331065,
+      "tag": "0032_content-affiliate",
+      "breakpoints": true
     }
   ]
 }

@@ -563,6 +563,65 @@ export const carouselSettings = sqliteTable("carousel_settings", {
   showBranding: integer("show_branding", { mode: "boolean" }).notNull().default(true),
 });
 
+/* ═══════════ Content Creation — TikTok Affiliate (Ide/Naskah/Tracker) ═══════════ */
+
+/** Ide konten video (bank ide + status pipeline). */
+export const contentIdeas = sqliteTable("content_ideas", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  /** Topik/produk yang diminta */
+  topic: text("topic").notNull(),
+  /** Format konten (review/tips/unboxing/dll) */
+  format: text("format").default("review"),
+  /** Hasil AI (JSON: ideas[{hook, hookLine}]) */
+  ideas: text("ideas").notNull(),
+  /** Status pipeline: ide/riset/produksi/posting */
+  status: text("status").notNull().default("ide"),
+  createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
+});
+
+/** Naskah video (skrip hook→bridge→CTA + caption + hashtag). */
+export const contentScripts = sqliteTable("content_scripts", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  /** Topik naskah */
+  topic: text("topic").notNull(),
+  /** Relasi ke ide (opsional) */
+  ideaId: integer("idea_id"),
+  /** Durasi (30/45/60 detik) */
+  duration: integer("duration").notNull().default(45),
+  /** Hasil AI (JSON: skrip[{bagian, teks}], caption, hashtags) */
+  script: text("script").notNull(),
+  createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
+});
+
+/** Produk affiliate tracker (pipeline + performa). */
+export const affiliateProducts = sqliteTable("affiliate_products", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  /** Nama produk */
+  product: text("product").notNull(),
+  /** Marketplace: tiktok-shop/shopee/tokopedia/lainnya */
+  marketplace: text("marketplace").notNull().default("tiktok-shop"),
+  /** Link affiliate */
+  link: text("link").default(""),
+  /** Harga produk */
+  price: integer("price").notNull().default(0),
+  /** Estimasi komisi % (dari AI atau manual) */
+  commissionPct: integer("commission_pct").notNull().default(5),
+  /** Analisa AI (JSON: audiens, angle, estimasiKomisi) */
+  analysis: text("analysis").default(""),
+  /** Relasi ke ide/naskah (opsional) */
+  ideaId: integer("idea_id"),
+  scriptId: integer("script_id"),
+  /** Status pipeline: riset/dipromosikan/komisi */
+  status: text("status").notNull().default("riset"),
+  /** Performa (manual) */
+  views: integer("views").notNull().default(0),
+  likes: integer("likes").notNull().default(0),
+  clicks: integer("clicks").notNull().default(0),
+  /** Komisi diterima (Rp) */
+  commissionReceived: integer("commission_received").notNull().default(0),
+  createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
+});
+
 /* ═══════════ Insight Cache (hasil analisa AI — persist SQLite) ═══════════ */
 
 export const insightCache = sqliteTable("insight_cache", {
