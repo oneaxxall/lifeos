@@ -22,9 +22,20 @@ import {
   badHabits,
   chatSessions,
   chatMessages,
+  timeBlocks,
+  moodEntries,
+  sickEntries,
+  familyEntries,
+  spiritualEntries,
+  businessIdeas,
+  contacts,
+  teamMembers,
+  carousels,
+  contentIdeas,
+  insights,
 } from "@/lib/db/schema";
 import { monthlySummary } from "@/lib/db/finance-repo";
-import { getFeatureMeta, getAdvisorMeta } from "@/lib/chat-features";
+import { getFeatureMeta, getAdvisorMeta, CHAT_FEATURES } from "@/lib/chat-features";
 
 /* ═══════════ Konteks fitur LifeOS Chat ═══════════ */
 
@@ -61,6 +72,16 @@ export function buildFeatureContext(feature: string): string {
           debtList.length > 0 ? `Cicilan: ${debtList.map((d) => `${d.party} ${d.amount.toLocaleString("id-ID")}${d.interestRate ? ` (bunga ${d.interestRate}%)` : ""}`).join("; ")}` : "Tidak ada cicilan",
         ];
         return parts.filter(Boolean).join(". ");
+      }
+      case "debts": {
+        const rows = db.select().from(debts).orderBy(desc(debts.id)).all();
+        if (rows.length === 0) return "Belum ada catatan hutang/piutang.";
+        return rows
+          .map((d) => {
+            const sisa = d.amount - d.paidAmount;
+            return `• ${d.type === "hutang" ? "Hutang" : "Piutang"} ${d.party}: total ${d.amount.toLocaleString("id-ID")}, terbayar ${d.paidAmount.toLocaleString("id-ID")}, sisa ${sisa.toLocaleString("id-ID")}${d.interestRate ? `, bunga ${d.interestRate}%` : ""}${d.monthlyInstallment ? `, angsuran ${d.monthlyInstallment.toLocaleString("id-ID")}/bln` : ""}${d.dueDate ? `, jatuh tempo ${d.dueDate}` : ""} (${d.status})`;
+          })
+          .join("\n");
       }
       case "stocks": {
         const rows = db.select().from(stockPortfolio).all();
@@ -115,6 +136,50 @@ export function buildFeatureContext(feature: string): string {
         const rows = db.select().from(badHabits).limit(10).all();
         return rows.length === 0 ? "Belum ada target kebiasaan." : rows.map((r) => `• ${r.name}`).join("\n");
       }
+      case "time": {
+        const rows = db.select().from(timeBlocks).orderBy(desc(timeBlocks.id)).limit(10).all();
+        return rows.length === 0 ? "Belum ada time block." : rows.map((r) => `• ${r.title} — ${r.day} ${r.startTime}-${r.endTime}`).join("\n");
+      }
+      case "mental": {
+        const rows = db.select().from(moodEntries).orderBy(desc(moodEntries.id)).limit(7).all();
+        return rows.length === 0 ? "Belum ada catatan mood." : rows.map((r) => `• ${r.date}: mood ${r.mood}/10${r.note ? ` — ${r.note.slice(0, 60)}` : ""}`).join("\n");
+      }
+      case "sick": {
+        const rows = db.select().from(sickEntries).orderBy(desc(sickEntries.id)).limit(5).all();
+        return rows.length === 0 ? "Belum ada catatan tidak enak badan." : rows.map((r) => `• ${r.date}: ${r.symptoms}${r.duration ? ` (${r.duration})` : ""}`).join("\n");
+      }
+      case "family": {
+        const rows = db.select().from(familyEntries).orderBy(desc(familyEntries.id)).limit(5).all();
+        return rows.length === 0 ? "Belum ada catatan keluarga." : rows.map((r) => `• ${r.date}: ${r.content.slice(0, 80)}${r.people ? ` (${r.people})` : ""}`).join("\n");
+      }
+      case "spiritual": {
+        const rows = db.select().from(spiritualEntries).orderBy(desc(spiritualEntries.id)).limit(5).all();
+        return rows.length === 0 ? "Belum ada catatan spiritual." : rows.map((r) => `• ${r.date}: ${r.rituals}, kualitas ${r.quality}/10${r.reflection ? ` — ${r.reflection.slice(0, 60)}` : ""}`).join("\n");
+      }
+      case "business": {
+        const rows = db.select().from(businessIdeas).orderBy(desc(businessIdeas.id)).limit(5).all();
+        return rows.length === 0 ? "Belum ada ide bisnis." : rows.map((r) => `• ${r.title} (${r.status})${r.description ? `: ${r.description.slice(0, 60)}` : ""}`).join("\n");
+      }
+      case "networking": {
+        const rows = db.select().from(contacts).orderBy(desc(contacts.id)).limit(5).all();
+        return rows.length === 0 ? "Belum ada kontak networking." : rows.map((r) => `• ${r.name} — ${r.role}@${r.company}${r.priority ? ` (${r.priority})` : ""}`).join("\n");
+      }
+      case "team": {
+        const rows = db.select().from(teamMembers).orderBy(desc(teamMembers.id)).limit(5).all();
+        return rows.length === 0 ? "Belum ada anggota tim." : rows.map((r) => `• ${r.name} — ${r.role} (${r.seniority})`).join("\n");
+      }
+      case "carousel": {
+        const rows = db.select().from(carousels).orderBy(desc(carousels.id)).limit(5).all();
+        return rows.length === 0 ? "Belum ada carousel." : rows.map((r) => `• ${r.topic} (${r.slideCount} slide, tema ${r.theme})`).join("\n");
+      }
+      case "content": {
+        const rows = db.select().from(contentIdeas).orderBy(desc(contentIdeas.id)).limit(5).all();
+        return rows.length === 0 ? "Belum ada ide konten." : rows.map((r) => `• ${r.topic} (${r.format}, ${r.status})`).join("\n");
+      }
+      case "insights": {
+        const rows = db.select().from(insights).orderBy(desc(insights.id)).limit(5).all();
+        return rows.length === 0 ? "Belum ada insight." : rows.map((r) => `• ${r.title} (${r.type}, ${r.status})`).join("\n");
+      }
       default:
         return "";
     }
@@ -130,6 +195,26 @@ export interface ChatMessageInput {
   message: string;
 }
 
+/** Konteks UMUM — ringkasan singkat SEMUA fitur LifeOS (hemat token). */
+function buildAllContext(): string {
+  const EMPTY_PREFIXES = ["belum ada", "belum punya", "tidak ada"];
+  const parts: string[] = [];
+  for (const f of CHAT_FEATURES) {
+    if (f.key === "umum") continue;
+    try {
+      const ctx = buildFeatureContext(f.key);
+      if (!ctx) continue;
+      const lower = ctx.toLowerCase();
+      if (EMPTY_PREFIXES.some((p) => lower.startsWith(p))) continue; // skip fitur kosong
+      parts.push(`═══ ${f.label.toUpperCase()} ═══\n${ctx}`);
+    } catch {
+      // fitur gagal dibaca → lewati
+    }
+    if (parts.length >= 25) break; // batas aman token (ringkasan pendek per fitur)
+  }
+  return parts.join("\n\n");
+}
+
 /** Stream jawaban AI dengan konteks fitur + riwayat percakapan. */
 export async function streamChat(input: {
   feature: string;
@@ -140,7 +225,9 @@ export async function streamChat(input: {
   const meta = getFeatureMeta(input.feature);
   const mode = input.mode === "curhat" ? "curhat" : "advisor";
   const advisorMeta = getAdvisorMeta(input.advisor ?? "psikolog");
-  const featureContext = mode === "advisor" ? buildFeatureContext(input.feature) : "";
+  const isAll = input.feature === "umum";
+  const featureContext = mode === "advisor" ? (isAll ? buildAllContext() : buildFeatureContext(input.feature)) : "";
+  const dataLabel = isAll ? "SELURUH DATA LIFEOS" : meta.label.toUpperCase();
   const model = getChatModel();
 
   // Persona per mode
@@ -167,7 +254,7 @@ export async function streamChat(input: {
       `Kamu adalah asisten pribadi LifeOS. Mode: **${mode === "curhat" ? "Curhat" : "Advisor"}**${mode === "advisor" ? ` (${advisorMeta.label})` : ""}.`,
       persona,
       mode === "advisor" && featureContext
-        ? `BERIKUT DATA DARI FITUR ${meta.label.toUpperCase()} (data nyata dari LifeOS — jawab berdasarkan ini saat ditanya hal yang ada di dalamnya):\n${featureContext}`
+        ? `BERIKUT DATA ${dataLabel} (data nyata dari LifeOS — jawab berdasarkan ini saat ditanya hal yang ada di dalamnya):\n${featureContext}`
         : "",
       "Aturan: jawab hangat & jelas dalam Bahasa Indonesia; jika data tidak ada di konteks, jangan mengarang — katakan dengan jujur dan sarankan cara mengisinya di LifeOS.",
     ]

@@ -186,6 +186,7 @@ export function LifeOSChatWorkspace() {
   const [settingsOpen, setSettingsOpen] = React.useState(false);
   const [visibleDate, setVisibleDate] = React.useState("");
   const [contextOpen, setContextOpen] = React.useState(true);
+  const [contextShowAll, setContextShowAll] = React.useState(false);
   const [ctxQuery, setCtxQuery] = React.useState("");
   const [pendingAction, setPendingAction] = React.useState<{ message: string; action: ChatAction } | null>(null);
   const [executingAction, setExecutingAction] = React.useState(false);
@@ -546,6 +547,24 @@ export function LifeOSChatWorkspace() {
     }
   };
 
+  /** Simpan konteks AI ke session aktif (atau state untuk session baru). */
+  const saveContextPref = (key: ChatFeatureKey) => {
+    setFeature(key);
+    setSettingsOpen(false);
+    if (activeId !== null) {
+      void fetch(`/api/chat/sessions/${activeId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ context: key }),
+      })
+        .then((r) => r.json())
+        .then((j) => {
+          if (j.ok) setSessions((p) => p.map((s) => (s.id === activeId ? { ...s, context: key } : s)));
+        })
+        .catch(() => {});
+    }
+  };
+
   const setFontPref = (size: number) => {
     setFontSize(size);
     try {
@@ -666,11 +685,13 @@ export function LifeOSChatWorkspace() {
                   />
                 </div>
                 <div className="mt-1.5 grid grid-cols-2 gap-1">
-                  {CHAT_FEATURES.filter(
-                    (f) =>
-                      !ctxQuery.trim() ||
-                      f.label.toLowerCase().includes(ctxQuery.trim().toLowerCase()) ||
-                      f.desc.toLowerCase().includes(ctxQuery.trim().toLowerCase())
+                  {(ctxQuery.trim()
+                    ? CHAT_FEATURES.filter(
+                        (f) =>
+                          f.label.toLowerCase().includes(ctxQuery.trim().toLowerCase()) ||
+                          f.desc.toLowerCase().includes(ctxQuery.trim().toLowerCase())
+                      )
+                    : CHAT_FEATURES.slice(0, contextShowAll ? CHAT_FEATURES.length : 8)
                   ).map((f) => (
                     <button
                       key={f.key}
@@ -694,6 +715,15 @@ export function LifeOSChatWorkspace() {
                     <p className="col-span-2 py-1 text-center text-[9px] text-muted-foreground">Tidak ada konteks cocok</p>
                   )}
                 </div>
+                {!ctxQuery.trim() && (
+                  <button
+                    onClick={() => setContextShowAll((v) => !v)}
+                    className="mt-1.5 flex w-full items-center justify-center gap-1 rounded-lg border border-dashed border-border/70 py-1 text-[9px] text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground"
+                  >
+                    <ChevronDown className={cn("size-3 transition-transform", contextShowAll && "rotate-180")} />
+                    {contextShowAll ? "Ringkas" : `Lihat semua (${CHAT_FEATURES.length})`}
+                  </button>
+                )}
               </>
             )}
           </div>
@@ -988,6 +1018,57 @@ export function LifeOSChatWorkspace() {
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
+            {/* Konteks AI */}
+            <div>
+              <label className="mb-2 block text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Konteks AI</label>
+              <div className="relative mb-1.5">
+                <Search className="absolute left-2 top-1/2 size-3 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={ctxQuery}
+                  onChange={(e) => setCtxQuery(e.target.value)}
+                  placeholder="Cari konteks…"
+                  className="h-7 rounded-lg pl-6 text-[10px]"
+                />
+              </div>
+              <div className="grid grid-cols-3 gap-1">
+                {(ctxQuery.trim()
+                  ? CHAT_FEATURES.filter(
+                      (f) =>
+                        f.label.toLowerCase().includes(ctxQuery.trim().toLowerCase()) ||
+                        f.desc.toLowerCase().includes(ctxQuery.trim().toLowerCase())
+                    )
+                  : CHAT_FEATURES.slice(0, contextShowAll ? CHAT_FEATURES.length : 8)
+                ).map((f) => (
+                  <button
+                    key={f.key}
+                    onClick={() => saveContextPref(f.key as ChatFeatureKey)}
+                    title={f.desc}
+                    className={cn(
+                      "rounded-lg border px-1.5 py-1.5 text-center transition-colors",
+                      feature === f.key ? "border-primary/50 bg-primary/10" : "border-border hover:bg-muted/40"
+                    )}
+                  >
+                    <f.icon className={cn("mx-auto size-3.5", feature === f.key ? "text-primary" : "text-muted-foreground")} />
+                    <span className={cn("mt-0.5 block truncate text-[8px] font-semibold leading-tight", feature === f.key ? "text-primary" : "text-foreground")}>
+                      {f.label}
+                    </span>
+                  </button>
+                ))}
+                {ctxQuery.trim() && !CHAT_FEATURES.some((f) => f.label.toLowerCase().includes(ctxQuery.trim().toLowerCase())) && (
+                  <p className="col-span-3 py-1 text-center text-[9px] text-muted-foreground">Tidak ada konteks cocok</p>
+                )}
+              </div>
+              {!ctxQuery.trim() && (
+                <button
+                  onClick={() => setContextShowAll((v) => !v)}
+                  className="mt-1.5 flex w-full items-center justify-center gap-1 rounded-lg border border-dashed border-border/70 py-1 text-[9px] text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground"
+                >
+                  <ChevronDown className={cn("size-3 transition-transform", contextShowAll && "rotate-180")} />
+                  {contextShowAll ? "Ringkas" : `Lihat semua (${CHAT_FEATURES.length})`}
+                </button>
+              )}
+            </div>
+
             {/* Mode percakapan */}
             <div>
               <label className="mb-2 block text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Mode percakapan</label>

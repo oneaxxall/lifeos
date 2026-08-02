@@ -14,6 +14,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (typeof body.title === "string" && body.title.trim()) sets.title = body.title.trim().slice(0, 60);
     if (body.mode === "curhat" || body.mode === "advisor") sets.mode = body.mode;
     if (typeof body.advisor === "string" && body.advisor.trim()) sets.advisor = body.advisor.trim().slice(0, 30);
+    if (typeof body.context === "string" && body.context.trim()) sets.context = body.context.trim().slice(0, 30);
     if (Object.keys(sets).length === 0) {
       return NextResponse.json({ error: "Tidak ada field valid" }, { status: 400 });
     }
