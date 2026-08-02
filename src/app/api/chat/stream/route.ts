@@ -34,7 +34,12 @@ export async function POST(req: NextRequest) {
     // Riwayat untuk konteks (termasuk pesan user yang baru)
     const history = getSessionMessages(sessionId, undefined, 20).map((m) => ({ role: m.role as "user" | "assistant", message: m.message }));
 
-    const stream = await streamChat({ feature: session.context, history });
+    const stream = await streamChat({
+      feature: session.context,
+      history,
+      mode: (session.mode as "curhat" | "advisor") ?? "advisor",
+      advisor: session.advisor ?? "psikolog",
+    });
 
     // Simpan jawaban setelah stream selesai → gunakan ReadableStream wrapper
     const encoder = new TextEncoder();

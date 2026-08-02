@@ -6,12 +6,14 @@ export async function GET() {
   return NextResponse.json({ data: listSessions() });
 }
 
-/** POST /api/chat/sessions — buat percakapan baru dengan konteks fitur. */
+/** POST /api/chat/sessions — buat percakapan baru dengan konteks fitur & mode. */
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const feature = String(body.feature || "umum");
-    const row = createSession(feature);
+    const mode = body.mode === "curhat" ? "curhat" : "advisor";
+    const advisor = String(body.advisor || "psikolog");
+    const row = createSession(feature, mode, advisor);
     return NextResponse.json({ ok: true, data: row }, { status: 201 });
   } catch {
     return NextResponse.json({ error: "Gagal membuat percakapan" }, { status: 500 });

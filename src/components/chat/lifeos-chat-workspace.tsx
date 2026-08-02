@@ -4,12 +4,14 @@ import * as React from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
+  Briefcase,
   Check,
   ChevronDown,
   ChevronUp,
   Copy,
   Loader2,
   MessageSquarePlus,
+  MessagesSquare,
   MessageSquareText,
   PanelLeft,
   Pencil,
@@ -34,13 +36,15 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { CHAT_FEATURES, type ChatFeatureKey } from "@/lib/chat-features";
+import { CHAT_FEATURES, ADVISOR_TYPES, type ChatFeatureKey } from "@/lib/chat-features";
 import type { ChatAction } from "@/lib/ai/chat-actions";
 
 interface SessionRow {
   id: number;
   title: string;
   context: string;
+  mode: "curhat" | "advisor";
+  advisor: string;
   updatedAt: string;
 }
 interface MessageRow {
@@ -186,6 +190,8 @@ export function LifeOSChatWorkspace() {
   const [pendingAction, setPendingAction] = React.useState<{ message: string; action: ChatAction } | null>(null);
   const [executingAction, setExecutingAction] = React.useState(false);
   const [copiedId, setCopiedId] = React.useState<number | null>(null);
+  const [mode, setMode] = React.useState<"curhat" | "advisor">("curhat");
+  const [advisor, setAdvisor] = React.useState<string>("psikolog");
   const scrollRef = React.useRef<HTMLDivElement | null>(null);
   const streamRef = React.useRef<AbortController | null>(null);
 
@@ -295,7 +301,7 @@ export function LifeOSChatWorkspace() {
       const res = await fetch("/api/chat/sessions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ feature }),
+        body: JSON.stringify({ feature, mode, advisor }),
       });
       const j = await res.json();
       if (!res.ok) throw new Error(j.error || "Gagal");
@@ -514,7 +520,30 @@ export function LifeOSChatWorkspace() {
   const selectSession = (s: SessionRow) => {
     setActiveId(s.id);
     setFeature(s.context as ChatFeatureKey);
+    setMode(s.mode === "curhat" ? "curhat" : "advisor");
+    setAdvisor(s.advisor || "psikolog");
     setPanelOpen(false);
+  };
+
+  /** Simpan mode/advisor ke session aktif (atau state untuk session baru). */
+  const saveModePref = (m: "curhat" | "advisor", a?: string) => {
+    setMode(m);
+    if (a) setAdvisor(a);
+    if (activeId !== null) {
+      void fetch(`/api/chat/sessions/${activeId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mode: m, ...(a ? { advisor: a } : {}) }),
+      })
+        .then((r) => r.json())
+        .then((j) => {
+          if (j.ok) {
+            setSessions((p) => p.map((s) => (s.id === activeId ? { ...s, mode: m, ...(a ? { advisor: a } : {}) } : s)));
+            toast.success(m === "curhat" ? "Mode Curhat aktif" : `Mode Advisor aktif`);
+          }
+        })
+        .catch(() => {});
+    }
   };
 
   const setFontPref = (size: number) => {
@@ -567,7 +596,14 @@ export function LifeOSChatWorkspace() {
           <Button variant="ghost" size="icon" className="size-8" onClick={() => setSettingsOpen(true)} aria-label="Pengaturan tampilan chat" title="Pengaturan tampilan">
             <Settings2 className="size-4" />
           </Button>
-          <span className="hidden rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary sm:block">{featureMeta.label}</span>
+          <span
+            className={cn(
+              "hidden rounded-full px-2 py-0.5 text-[10px] font-semibold sm:block",
+              mode === "curhat" ? "bg-violet-500/10 text-violet-600 dark:text-violet-400" : "bg-primary/10 text-primary"
+            )}
+          >
+            {mode === "curhat" ? "Curhat" : `Advisor · ${ADVISOR_TYPES.find((a) => a.key === advisor)?.label ?? "Psikolog"}`}
+          </span>
           <Button
             size="icon"
             onClick={() => startNew()}
@@ -707,7 +743,7 @@ export function LifeOSChatWorkspace() {
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-[11px] font-medium">{s.title}</p>
                         <p className="text-[9px] text-muted-foreground">
-                          {CHAT_FEATURES.find((f) => f.key === s.context)?.label ?? s.context} · {fmtTime(s.updatedAt)}
+                          {CHAT_FEATURES.find((f) => f.key === s.context)?.label ?? s.context} · {s.mode === "curhat" ? "Curhat" : `Advisor·${ADVISOR_TYPES.find((a) => a.key === s.advisor)?.label ?? "Psikolog"}`} · {fmtTime(s.updatedAt)}
                         </p>
                       </div>
                       <button
@@ -952,6 +988,63 @@ export function LifeOSChatWorkspace() {
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
+            {/* Mode percakapan */}
+            <div>
+              <label className="mb-2 block text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Mode percakapan</label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => saveModePref("curhat")}
+                  className={cn(
+                    "rounded-xl border p-3 text-left transition-colors",
+                    mode === "curhat" ? "border-violet-500/50 bg-violet-500/10" : "border-border hover:bg-muted/40"
+                  )}
+                >
+                  <span className={cn("block text-[11px] font-semibold", mode === "curhat" ? "text-violet-600 dark:text-violet-400" : "text-foreground")}>
+                    <MessagesSquare className="mr-1 inline size-3.5 -mt-0.5" />
+                    Curhat
+                  </span>
+                  <span className="mt-0.5 block text-[9px] leading-snug text-muted-foreground">Teman hangat & psikologis — tanpa membaca data LifeOS</span>
+                </button>
+                <button
+                  onClick={() => saveModePref("advisor")}
+                  className={cn(
+                    "rounded-xl border p-3 text-left transition-colors",
+                    mode === "advisor" ? "border-primary/50 bg-primary/10" : "border-border hover:bg-muted/40"
+                  )}
+                >
+                  <span className={cn("block text-[11px] font-semibold", mode === "advisor" ? "text-primary" : "text-foreground")}>
+                    <Briefcase className="mr-1 inline size-3.5 -mt-0.5" />
+                    Advisor
+                  </span>
+                  <span className="mt-0.5 block text-[9px] leading-snug text-muted-foreground">Analisa & keputusan — bisa baca data LifeOS bila diminta</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Personality advisor */}
+            {mode === "advisor" && (
+              <div>
+                <label className="mb-2 block text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Personality advisor</label>
+                <div className="grid grid-cols-3 gap-1.5">
+                  {ADVISOR_TYPES.map((a) => (
+                    <button
+                      key={a.key}
+                      onClick={() => saveModePref("advisor", a.key)}
+                      title={a.desc}
+                      className={cn(
+                        "rounded-xl border p-2 text-center transition-colors",
+                        advisor === a.key ? "border-primary/50 bg-primary/10" : "border-border hover:bg-muted/40"
+                      )}
+                    >
+                      <a.icon className={cn("mx-auto size-4", advisor === a.key ? "text-primary" : "text-muted-foreground")} />
+                      <span className={cn("mt-1 block text-[9px] font-semibold leading-tight", advisor === a.key ? "text-primary" : "text-foreground")}>{a.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Ukuran font */}
             <div>
               <label className="mb-2 block text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Ukuran font pesan</label>
               <div className="grid grid-cols-3 gap-2">

@@ -24,7 +24,7 @@ import {
   chatMessages,
 } from "@/lib/db/schema";
 import { monthlySummary } from "@/lib/db/finance-repo";
-import { getFeatureMeta } from "@/lib/chat-features";
+import { getFeatureMeta, getAdvisorMeta } from "@/lib/chat-features";
 
 /* ═══════════ Konteks fitur LifeOS Chat ═══════════ */
 
@@ -134,21 +134,45 @@ export interface ChatMessageInput {
 export async function streamChat(input: {
   feature: string;
   history: ChatMessageInput[];
+  mode?: "curhat" | "advisor";
+  advisor?: string;
 }): Promise<ReadableStream<string>> {
   const meta = getFeatureMeta(input.feature);
-  const featureContext = buildFeatureContext(input.feature);
+  const mode = input.mode === "curhat" ? "curhat" : "advisor";
+  const advisorMeta = getAdvisorMeta(input.advisor ?? "psikolog");
+  const featureContext = mode === "advisor" ? buildFeatureContext(input.feature) : "";
   const model = getChatModel();
+
+  // Persona per mode
+  const persona = mode === "curhat"
+    ? [
+        "Kamu adalah TEMAN CURHAT yang hangat & psikologis.",
+        "Fokus: mendengarkan dengan penuh empati, memahami perasaan, tidak menghakimi, tidak buru-buru memberi solusi.",
+        "Gunakan bahasa lembut, refleksi perasaan (mis. 'Sepertinya kamu merasa...'), dan validasi pengalaman user.",
+        "PENTING: Kamu TIDAK membaca data LifeOS sama sekali dalam mode ini — cukup fokus pada cerita yang diceritakan user.",
+        "Jawab 1-3 paragraf hangat, bukan esai panjang.",
+      ].join("\n")
+    : [
+        `Kamu adalah ${advisorMeta.label} profesional (${advisorMeta.desc}).`,
+        "Beri analisa jernih, opsi keputusan, dan langkah praktis — tegas namun tetap hangat.",
+        "Kamu BOLEH membaca data LifeOS user (konteks fitur aktif di bawah) dan menjawab berdasarkan data itu.",
+        "Gunakan data HANYA jika diminta user atau relevan dengan pertanyaannya — jangan dump semua data.",
+        "Jawab terstruktur dengan markdown (bold, list, tabel) agar mudah dibaca.",
+      ].join("\n");
 
   const system =
     buildSystemPrompt({ tone: "detail" }) +
     [
       "",
-      `Kamu adalah asisten pribadi LifeOS. Konteks aktif: **${meta.label}**.`,
-      featureContext
+      `Kamu adalah asisten pribadi LifeOS. Mode: **${mode === "curhat" ? "Curhat" : "Advisor"}**${mode === "advisor" ? ` (${advisorMeta.label})` : ""}.`,
+      persona,
+      mode === "advisor" && featureContext
         ? `BERIKUT DATA DARI FITUR ${meta.label.toUpperCase()} (data nyata dari LifeOS — jawab berdasarkan ini saat ditanya hal yang ada di dalamnya):\n${featureContext}`
-        : "Tidak ada data fitur yang tersedia untuk konteks ini.",
-      "Aturan: jawab hangat & jelas dalam Bahasa Indonesia; gunakan markdown (bold, list, tabel) agar mudah dibaca; jika data tidak ada di konteks, jangan mengarang — katakan dengan jujur dan sarankan cara mengisinya di LifeOS.",
-    ].join("\n");
+        : "",
+      "Aturan: jawab hangat & jelas dalam Bahasa Indonesia; jika data tidak ada di konteks, jangan mengarang — katakan dengan jujur dan sarankan cara mengisinya di LifeOS.",
+    ]
+      .filter(Boolean)
+      .join("\n");
 
   const historyText = input.history
     .slice(-12)
@@ -185,10 +209,10 @@ export function getSessionMessages(sessionId: number, beforeId?: number, limit =
   return rows.reverse();
 }
 
-export function createSession(feature: string) {
+export function createSession(feature: string, mode = "curhat", advisor = "psikolog") {
   const row = db
     .insert(chatSessions)
-    .values({ context: feature, title: "Percakapan baru" })
+    .values({ context: feature, title: "Percakapan baru", mode: mode as "curhat" | "advisor", advisor })
     .returning()
     .get();
   return row;

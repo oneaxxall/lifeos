@@ -1,5 +1,6 @@
 import {
   BookHeart,
+  Briefcase,
   Calculator,
   CheckSquare,
   Clock,
@@ -8,6 +9,7 @@ import {
   HeartPulse,
   Library,
   MessageSquareText,
+  Moon,
   Quote,
   Timer,
   TrendingUp,
@@ -40,6 +42,25 @@ export const CHAT_FEATURES: {
 ];
 
 export type ChatFeatureKey = (typeof CHAT_FEATURES)[number]["key"];
+
+/** Personality advisor — mode Advisor di LifeOS Chat. */
+export const ADVISOR_TYPES: {
+  key: string;
+  label: string;
+  desc: string;
+  icon: LucideIcon;
+}[] = [
+  { key: "psikolog", label: "Psikolog", desc: "Empati, mendengarkan, kesehatan mental", icon: HeartPulse },
+  { key: "business", label: "Business Advisor", desc: "Strategi bisnis, keputusan, pertumbuhan", icon: Briefcase },
+  { key: "keuangan", label: "Keuangan", desc: "Perencanaan & analisa keuangan", icon: Wallet },
+  { key: "karier", label: "Karier", desc: "Pengembangan karier & keputusan", icon: TrendingUp },
+  { key: "spiritual", label: "Spiritual", desc: "Makna, syukur, ketenangan jiwa", icon: Moon },
+  { key: "produktivitas", label: "Produktivitas", desc: "Fokus, waktu, kebiasaan", icon: Timer },
+];
+
+export function getAdvisorMeta(key: string) {
+  return ADVISOR_TYPES.find((a) => a.key === key) ?? ADVISOR_TYPES[0];
+}
 
 export function getFeatureMeta(feature: string) {
   return CHAT_FEATURES.find((f) => f.key === feature) ?? CHAT_FEATURES[0];

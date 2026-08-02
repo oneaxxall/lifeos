@@ -677,6 +677,10 @@ export const chatSessions = sqliteTable("chat_sessions", {
   title: text("title").notNull().default("Percakapan baru"),
   /** Konteks fitur yang dipilih (knowledge, todos, finance, dst.) */
   context: text("context").notNull().default("umum"),
+  /** Mode percakapan: curhat (tanpa data) | advisor (bisa baca data) */
+  mode: text("mode", { enum: ["curhat", "advisor"] }).notNull().default("curhat"),
+  /** Personality advisor (psikolog, business, keuangan, dst.) */
+  advisor: text("advisor").notNull().default("psikolog"),
   createdAt: text("created_at")
     .notNull()
     .default(sql`(datetime('now'))`),
