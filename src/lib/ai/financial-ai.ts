@@ -82,6 +82,34 @@ export interface FinancialAiInput {
   }[];
 }
 
+/** Rangkuman konteks profil user untuk prompt AI. */
+export function buildFinancialContext(input: FinancialAiInput): string {
+  const debtsSummary = input.debts
+    .map(
+      (d) =>
+        `- ${d.party}: sisa Rp${(d.amount - d.paidAmount).toLocaleString("id-ID")} (dari Rp${d.amount.toLocaleString(
+          "id-ID"
+        )}), angsuran Rp${(d.monthlyInstallment || 0).toLocaleString("id-ID")}/bulan, bunga ${d.interestRate}%/thn, tenor ${d.installmentCount}x, jatuh tempo ${d.dueDate || "-"}`
+    )
+    .join("\n");
+  const childrenSummary = input.children
+    .map((c) => `- ${c.name} (usia ${c.age}): ${c.schoolLevel}, biaya/tahun Rp${c.schoolCostYear.toLocaleString("id-ID")}`)
+    .join("\n");
+  return [
+    `Usia: ${input.age} tahun`,
+    `Pemasukan: Rp${input.monthlyIncome.toLocaleString("id-ID")}/bulan`,
+    `Pengeluaran: Rp${input.monthlyExpense.toLocaleString("id-ID")}/bulan`,
+    `Tabungan: Rp${input.monthlySavings.toLocaleString("id-ID")}/bulan`,
+    `Dana darurat: Rp${input.emergencyCurrent.toLocaleString("id-ID")} (target ${input.emergencyMonths}x pengeluaran)`,
+    `Alokasi investasi: saham ${input.stockPct}% (return ${input.stockReturn}%), obligasi ${input.bondPct}% (${input.bondReturn}%), kas ${input.cashPct}% (${input.cashReturn}%)`,
+    `Inflasi ${input.inflation}%, target FIRE ${input.fireMultiple}x pengeluaran tahunan`,
+    `Target dividen: Rp${input.dividendTarget.toLocaleString("id-ID")}/tahun dengan yield ${input.dividendYield}%`,
+    `AKTUAL bulan berjalan (dari fitur Finance): pemasukan masuk Rp${input.actualIncome.toLocaleString("id-ID")}, pengeluaran keluar Rp${input.actualExpense.toLocaleString("id-ID")}`,
+    `Anak:\n${childrenSummary || "- tidak ada data anak"}`,
+    `Cicilan/hutang:\n${debtsSummary || "- tidak ada cicilan"}`,
+  ].join("\n");
+}
+
 /** Analisa keuangan menyeluruh: prioritas lunas cicilan, alokasi dana, roadmap dividen & FIRE. */
 export async function analyzeFinancial(input: FinancialAiInput): Promise<{
   ok: boolean;
@@ -117,36 +145,10 @@ export async function analyzeFinancial(input: FinancialAiInput): Promise<{
         "- Jangan pernah menyarankan riba/bunga.",
       ].join("\n");
 
-    const debtsSummary = input.debts
-      .map(
-        (d) =>
-          `- ${d.party}: sisa Rp${(d.amount - d.paidAmount).toLocaleString("id-ID")} (dari Rp${d.amount.toLocaleString(
-            "id-ID"
-          )}), angsuran Rp${(d.monthlyInstallment || 0).toLocaleString("id-ID")}/bulan, bunga ${d.interestRate}%/thn, tenor ${d.installmentCount}x, jatuh tempo ${d.dueDate || "-"}`
-      )
-      .join("\n");
-    const childrenSummary = input.children
-      .map((c) => `- ${c.name} (usia ${c.age}): ${c.schoolLevel}, biaya/tahun Rp${c.schoolCostYear.toLocaleString("id-ID")}`)
-      .join("\n");
-
-    const prompt = [
-      `Usia: ${input.age} tahun`,
-      `Pemasukan: Rp${input.monthlyIncome.toLocaleString("id-ID")}/bulan`,
-      `Pengeluaran: Rp${input.monthlyExpense.toLocaleString("id-ID")}/bulan`,
-      `Tabungan: Rp${input.monthlySavings.toLocaleString("id-ID")}/bulan`,
-      `Dana darurat: Rp${input.emergencyCurrent.toLocaleString("id-ID")} (target ${input.emergencyMonths}x pengeluaran)`,
-      `Alokasi investasi: saham ${input.stockPct}% (return ${input.stockReturn}%), obligasi ${input.bondPct}% (${input.bondReturn}%), kas ${input.cashPct}% (${input.cashReturn}%)`,
-      `Inflasi ${input.inflation}%, target FIRE ${input.fireMultiple}x pengeluaran tahunan`,
-      `Target dividen: Rp${input.dividendTarget.toLocaleString("id-ID")}/tahun dengan yield ${input.dividendYield}%`,
-      `AKTUAL bulan berjalan (dari fitur Finance): pemasukan masuk Rp${input.actualIncome.toLocaleString("id-ID")}, pengeluaran keluar Rp${input.actualExpense.toLocaleString("id-ID")}`,
-      `Anak:\n${childrenSummary || "- tidak ada data anak"}`,
-      `Cicilan/hutang:\n${debtsSummary || "- tidak ada cicilan"}`,
-    ].join("\n");
-
     const { text } = await generateText({
       model,
       system,
-      prompt,
+      prompt: buildFinancialContext(input),
       temperature: 0.4,
     });
     const parsed = parseJson(text, FinancialAnalysisSchema);
@@ -157,5 +159,38 @@ export async function analyzeFinancial(input: FinancialAiInput): Promise<{
     if (msg.includes("AI_API_KEY")) return { ok: true, data: null, source: "heuristik", error: "AI_API_KEY belum diatur" };
     console.error("AI financial error:", err);
     return { ok: true, data: null, source: "heuristik", error: msg };
+  }
+}
+
+/** Chat dengan AI advisor — menjawab pertanyaan dengan konteks profil keuangan user. */
+export async function chatFinancial(
+  input: FinancialAiInput,
+  question: string
+): Promise<{ ok: boolean; text: string | null; error?: string }> {
+  try {
+    const model = getModel();
+    const system =
+      buildSystemPrompt({ tone: "detail" }) +
+      [
+        "",
+        "Kamu adalah financial advisor syariah Indonesia (anti riba) yang hangat, jelas, dan praktis.",
+        "Jawab pertanyaan user berdasarkan KONTEKS profil keuangannya di bawah. Gunakan angka konkret dari profil.",
+        "Format jawaban: ringkas (maks 150 kata), poin-poin bila perlu, Bahasa Indonesia, angka rupiah pakai titik.",
+        "Jika pertanyaan di luar data profil, jawab dengan prinsip umum keuangan syariah yang aman.",
+        "JANGAN pernah menyarankan riba/bunga — selalu arahkan ke instrumen syariah.",
+      ].join("\n");
+
+    const { text } = await generateText({
+      model,
+      system,
+      prompt: `KONTEKS PROFIL USER:\n${buildFinancialContext(input)}\n\nPERTANYAAN USER:\n${question}`,
+      temperature: 0.5,
+    });
+    return { ok: true, text: text.trim() };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (msg.includes("AI_API_KEY")) return { ok: true, text: null, error: "AI_API_KEY belum diatur" };
+    console.error("AI chat error:", err);
+    return { ok: true, text: null, error: msg };
   }
 }

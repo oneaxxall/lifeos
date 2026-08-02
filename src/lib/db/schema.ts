@@ -743,6 +743,19 @@ export const financialChildren = sqliteTable("financial_children", {
   updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
 });
 
+/* ═══════════ Financial Chats (riwayat percakapan dengan AI advisor) ═══════════ */
+
+export const financialChats = sqliteTable("financial_chats", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  /** Peran: user | assistant */
+  role: text("role", { enum: ["user", "assistant"] }).notNull(),
+  /** Isi pesan */
+  message: text("message").notNull(),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+});
+
 /* ═══════════ Life Profile (biodata hidup — akar Story of My Life) ═══════════ */
 
 export const lifeProfiles = sqliteTable("life_profile", {

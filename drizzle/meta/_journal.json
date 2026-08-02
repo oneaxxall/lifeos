@@ -239,6 +239,13 @@
       "when": 1785668311667,
       "tag": "0033_financial-upgrade",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "6",
+      "when": 1785671483326,
+      "tag": "0034_financial-chats",
+      "breakpoints": true
     }
   ]
 }
