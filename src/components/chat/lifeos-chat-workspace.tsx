@@ -7,6 +7,7 @@ import {
   Check,
   ChevronDown,
   ChevronUp,
+  Copy,
   Loader2,
   MessageSquarePlus,
   MessageSquareText,
@@ -184,6 +185,7 @@ export function LifeOSChatWorkspace() {
   const [ctxQuery, setCtxQuery] = React.useState("");
   const [pendingAction, setPendingAction] = React.useState<{ message: string; action: ChatAction } | null>(null);
   const [executingAction, setExecutingAction] = React.useState(false);
+  const [copiedId, setCopiedId] = React.useState<number | null>(null);
   const scrollRef = React.useRef<HTMLDivElement | null>(null);
   const streamRef = React.useRef<AbortController | null>(null);
 
@@ -435,6 +437,33 @@ export function LifeOSChatWorkspace() {
     const m = pendingAction?.message;
     setPendingAction(null);
     if (m) void streamOnly(m, new Date().toISOString());
+  };
+
+  /** Salin isi satu pesan — dengan feedback visual centang. */
+  const copyMessage = async (msg: MessageRow) => {
+    try {
+      await navigator.clipboard.writeText(msg.message);
+      setCopiedId(msg.id);
+      window.setTimeout(() => setCopiedId((cur) => (cur === msg.id ? null : cur)), 1500);
+      toast.success("Pesan disalin");
+    } catch {
+      toast.error("Gagal menyalin");
+    }
+  };
+
+  /** Salin seluruh percakapan ke clipboard (markdown). */
+  const copyChat = async () => {
+    if (messages.length === 0) return;
+    const text = messages
+      .filter((m) => m.message)
+      .map((m) => `${m.role === "user" ? "🧑 User" : "🤖 AI LifeOS"}:\n${m.message}`)
+      .join("\n\n---\n\n");
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success(`${messages.filter((m) => m.message).length} pesan disalin`);
+    } catch {
+      toast.error("Gagal menyalin percakapan");
+    }
   };
 
   const startRename = (s: SessionRow) => {
@@ -779,7 +808,20 @@ export function LifeOSChatWorkspace() {
                               </span>
                             </div>
                           )}
-                          <div data-date={(msg.createdAt || "").slice(0, 10)} className={cn("flex", msg.role === "user" ? "justify-end" : "justify-start")}>
+                          <div data-date={(msg.createdAt || "").slice(0, 10)} className={cn("group flex items-end gap-1", msg.role === "user" ? "justify-end" : "justify-start")}>
+                            {msg.role === "user" && msg.message && (
+                              <button
+                                onClick={() => void copyMessage(msg)}
+                                className={cn(
+                                  "mb-0.5 flex size-5 shrink-0 items-center justify-center rounded text-muted-foreground/60 transition-opacity hover:text-foreground lg:opacity-0 lg:group-hover:opacity-100",
+                                  copiedId === msg.id && "lg:opacity-100"
+                                )}
+                                aria-label="Salin pesan"
+                                title={copiedId === msg.id ? "Tersalin ✓" : "Salin pesan"}
+                              >
+                                {copiedId === msg.id ? <Check className="size-3 text-emerald-500" /> : <Copy className="size-3" />}
+                              </button>
+                            )}
                             <div
                               className={cn(
                                 "max-w-[85%] rounded-2xl px-3 py-2 leading-relaxed break-words [overflow-wrap:anywhere] sm:max-w-[75%]",
@@ -806,6 +848,19 @@ export function LifeOSChatWorkspace() {
                                 </p>
                               )}
                             </div>
+                            {msg.role === "assistant" && msg.message && (
+                              <button
+                                onClick={() => void copyMessage(msg)}
+                                className={cn(
+                                  "mb-0.5 flex size-5 shrink-0 items-center justify-center rounded text-muted-foreground/60 transition-opacity hover:text-foreground lg:opacity-0 lg:group-hover:opacity-100",
+                                  copiedId === msg.id && "lg:opacity-100"
+                                )}
+                                aria-label="Salin pesan"
+                                title={copiedId === msg.id ? "Tersalin ✓" : "Salin pesan"}
+                              >
+                                {copiedId === msg.id ? <Check className="size-3 text-emerald-500" /> : <Copy className="size-3" />}
+                              </button>
+                            )}
                           </div>
                         </React.Fragment>
                       );
@@ -867,10 +922,23 @@ export function LifeOSChatWorkspace() {
                 {streaming ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
               </Button>
             </div>
-            <p className="mx-auto mt-1.5 flex max-w-3xl items-center gap-1 text-[9px] text-muted-foreground">
-              <Sparkles className="size-2.5 shrink-0 text-primary" />
-              Konteks aktif: <b>{featureMeta.label}</b> — AI bisa membaca data LifeOS-mu dari fitur ini.
-            </p>
+            <div className="mx-auto mt-1.5 flex max-w-3xl items-center justify-between gap-2">
+              <p className="flex min-w-0 items-center gap-1 text-[9px] text-muted-foreground">
+                <Sparkles className="size-2.5 shrink-0 text-primary" />
+                <span className="truncate">
+                  Konteks aktif: <b>{featureMeta.label}</b> — AI bisa membaca data LifeOS-mu dari fitur ini.
+                </span>
+              </p>
+              <button
+                onClick={() => void copyChat()}
+                disabled={messages.length === 0}
+                className="flex shrink-0 items-center gap-1 rounded-md px-1.5 py-0.5 text-[9px] text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+                title="Salin seluruh percakapan"
+              >
+                <Copy className="size-2.5" />
+                Salin chat
+              </button>
+            </div>
           </div>
         </main>
       </div>
