@@ -74,7 +74,7 @@ export function TaskCard({ todo, onEdit, onDelete, onBreakdown }: Props) {
               {todo.title}
             </p>
             <div
-              className="flex shrink-0 gap-0.5 opacity-0 transition-opacity group-hover:opacity-100"
+              className="flex shrink-0 gap-0.5 lg:opacity-0 lg:transition-opacity lg:group-hover:opacity-100"
               onClick={(e) => e.stopPropagation()}
             >
               {onBreakdown && isBigTask(todo.estimateMinutes) && !isDone && (
