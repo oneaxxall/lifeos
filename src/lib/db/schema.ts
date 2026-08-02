@@ -652,6 +652,23 @@ export const dailyQuotes = sqliteTable("daily_quotes", {
     .default(sql`(datetime('now'))`),
 });
 
+/* ═══════════ Quote Topics (topik quotes yang bisa di-manage) ═══════════ */
+
+export const quoteTopics = sqliteTable("quote_topics", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  /** Nama topik (unik, lowercase) */
+  name: text("name").notNull().unique(),
+  /** Personality AI untuk topik ini: bijak/tegas/lembut/motivator/spiritual */
+  personality: text("personality").notNull().default("bijak"),
+  /** Deskripsi singkat topik */
+  description: text("description").default(""),
+  /** Aktif (muncul di dropdown generate) */
+  active: integer("active", { mode: "boolean" }).notNull().default(true),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+});
+
 /* ═══════════ Pomodoro Technique ═══════════ */
 
 export const pomodoroSessions = sqliteTable("pomodoro_sessions", {

@@ -14,11 +14,19 @@ import {
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { navGroups } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
+import { OPEN_NAV_EVENT } from "@/components/layout/swipe-nav";
 
 /** Navigasi mobile — hamburger di header membuka Sheet berisi menu (md: hidden). */
 export function MobileNav() {
   const pathname = usePathname();
   const [open, setOpen] = React.useState(false);
+
+  // Buka drawer juga via gesture swipe (SwipeNav → custom event)
+  React.useEffect(() => {
+    const openFromSwipe = () => setOpen(true);
+    window.addEventListener(OPEN_NAV_EVENT, openFromSwipe);
+    return () => window.removeEventListener(OPEN_NAV_EVENT, openFromSwipe);
+  }, []);
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>

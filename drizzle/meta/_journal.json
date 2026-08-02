@@ -246,6 +246,13 @@
       "when": 1785671483326,
       "tag": "0034_financial-chats",
       "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "6",
+      "when": 1785674009808,
+      "tag": "0035_quote-topics",
+      "breakpoints": true
     }
   ]
 }

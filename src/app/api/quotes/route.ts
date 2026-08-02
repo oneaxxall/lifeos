@@ -15,13 +15,20 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({ data: all });
 }
 
-/** POST /api/quotes — generate & simpan quote hari ini (ganti yang lama). */
+/** POST /api/quotes — generate & simpan quote hari ini (APPEND). */
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const count = Number(body.count || 1);
     const topic = String(body.topic || "motivasi").trim();
-    const result = await generateQuotes({ count, topic });
+    const personality = String(body.personality || "bijak");
+    const context = String(body.context || "").trim();
+    const result = await generateQuotes({
+      count,
+      topic,
+      personality: personality as Parameters<typeof generateQuotes>[0]["personality"],
+      context: context || undefined,
+    });
     if (!result.ok) {
       return NextResponse.json({ error: result.error || "Gagal generate" }, { status: 500 });
     }

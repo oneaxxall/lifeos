@@ -4,11 +4,13 @@ import { asc, desc, eq } from "drizzle-orm";
 import { getModel } from "@/lib/ai/provider";
 import { buildSystemPrompt, buildUserPrompt } from "@/lib/ai/prompt-builder";
 import { db } from "@/lib/db";
-import { dailyQuotes } from "@/lib/db/schema";
+import { dailyQuotes, moodEntries, activities } from "@/lib/db/schema";
+import { PERSONALITIES, PERSONA_GUIDE, type Personality } from "@/lib/quote-personalities";
 
 export const QuoteSchema = z.object({
   content: z.string(),
   author: z.string().optional().default(""),
+  topic: z.string().optional(),
 });
 
 export type Quote = z.infer<typeof QuoteSchema>;
@@ -67,10 +69,35 @@ function buildHeuristicQuotes(count: number, topic: string): Quote[] {
   return result;
 }
 
+/** Konteks hidup user dari LifeOS — membuat quote relevan dengan situasi nyata. */
+export function buildLifeContext(): string {
+  try {
+    const today = new Intl.DateTimeFormat("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).format(new Date());
+    const parts: string[] = [`Hari ini: ${today}`];
+    const mood = db.select().from(moodEntries).orderBy(desc(moodEntries.date)).limit(1).get();
+    if (mood) {
+      const moodLabel = ["", "sangat buruk", "buruk", "biasa", "baik", "sangat baik"][mood.mood] ?? "biasa";
+      parts.push(`Mood terakhir (${mood.date}): ${moodLabel} (${mood.mood}/5)${mood.note ? ` — catatan: "${mood.note}"` : ""}`);
+    }
+    const acts = db.select().from(activities).orderBy(desc(activities.id)).limit(3).all();
+    if (acts.length > 0) {
+      const latest = acts[0];
+      parts.push(`Aktivitas terbaru: "${latest.name}"${latest.description ? ` — ${latest.description}` : ""}${latest.durationMinutes ? ` (${Math.round(latest.durationMinutes)} menit)` : ""}`);
+      if (acts.length > 1) parts.push(`Aktivitas lain: ${acts.slice(1).map((a) => a.name).join(", ")}`);
+    }
+    return parts.join("\n");
+  } catch {
+    return "";
+  }
+}
+
 /** Generate quotes untuk hari ini — simpan ke DB, kembalikan daftar. */
 export async function generateQuotes(input: {
   count: number;
   topic: string;
+  personality?: Personality;
+  /** Konteks tambahan dari user (situasi/cerita) */
+  context?: string;
 }): Promise<{
   ok: boolean;
   data: Quote[];
@@ -79,18 +106,30 @@ export async function generateQuotes(input: {
 }> {
   const count = Math.min(10, Math.max(1, Number(input.count) || 1));
   const topic = (input.topic || "motivasi").trim();
+  const personality: Personality = (PERSONALITIES.some((p) => p.value === input.personality) ? input.personality : "bijak") as Personality;
   const today = new Date().toISOString().slice(0, 10);
   const heuristik = buildHeuristicQuotes(count, topic);
+
+  // Konteks dalam: data LifeOS (mood, aktivitas) + cerita user
+  const lifeContext = buildLifeContext();
+  const userContext = (input.context || "").trim();
 
   try {
     const model = getModel();
     const system = buildSystemPrompt({ tone: "detail" });
     const user = buildUserPrompt(
-      `Buat ${count} quotes singkat dan bermakna tentang topik: "${topic}". ` +
-        "Setiap quote 1-2 kalimat, bahasa Indonesia, hangat dan menginspirasi tanpa menggurui. " +
-        `Output JSON: {"quotes":[{"content":"...","author":"..."}]} dengan tepat ${count} item. ` +
-        "Jika topik tidak jelas, buat quote umum yang memotivasi.",
-      `Topik: ${topic}`
+      `Buat ${count} quotes bermakna tentang topik: "${topic}". ` +
+        "PEDOMAN KUALITAS (ilmu & kedalaman):\n" +
+        "- Setiap kutipan harus mengandung KEBUTUHAN FILOSOFIS/ILMIAH, bukan klise motivasi generik.\n" +
+        "- Rujuk prinsip nyata sesuai topik: psikologi (stoikisme, habit loop, delayed gratification), keuangan (value investing, anti riba, margin of safety), kesehatan (hormesis, sleep hygiene), produktivitas (deep work, Parkinson's law), keluarga (attachment, intentional time), spiritual (syukur, tawakal).\n" +
+        "- 1-2 kalimat, bahasa Indonesia, padat, tak menggurui.\n" +
+        `PERSONALITY AI: ${PERSONA_GUIDE[personality]}\n` +
+        "KONTEKS HIDUP USER (relevansikan quote dengan situasi ini — jangan asal umum):\n" +
+        `${lifeContext || "- belum ada data LifeOS"}\n` +
+        (userContext ? `CERITA/SITUASI DARI USER: ${userContext}\n` : "") +
+        `Output JSON: {"quotes":[{"content":"...","author":"nama tokoh/'-' jika orisinal"}]} dengan tepat ${count} item. ` +
+        "Jika topik tidak jelas, buat quote umum yang tetap dalam & bermakna.",
+      `Topik: ${topic}\nPersonality: ${personality}${userContext ? `\nKonteks user: ${userContext}` : ""}`
     );
     const { text } = await generateText({ model, system, prompt: user, temperature: 0.8 });
     const parsed = parseQuoteJson(text);
