@@ -42,6 +42,8 @@ export async function GET() {
       paidAmount: r.paidAmount,
       date: r.date,
       dueDate: r.dueDate ?? "",
+      interestRate: r.interestRate ?? 0,
+      monthlyInstallment: r.monthlyInstallment ?? 0,
       status: r.status,
       notes: r.notes ?? "",
       /** Sisa yang belum dibayar */
@@ -105,6 +107,8 @@ export async function POST(req: NextRequest) {
         paidAmount,
         date: String(b.date || new Date().toISOString().slice(0, 10)),
         dueDate: String(b.dueDate || ""),
+        interestRate: Math.min(50, Math.max(0, NUM(b.interestRate))),
+        monthlyInstallment: NUM(b.monthlyInstallment),
         status: computeStatus(amount, paidAmount),
         notes: String(b.notes || "").slice(0, 300),
       })
@@ -134,6 +138,8 @@ export async function PATCH(req: NextRequest) {
 
     const amount = b.amount !== undefined ? NUM(b.amount) : existing.amount;
     const paidAmount = b.paidAmount !== undefined ? NUM(b.paidAmount) : existing.paidAmount;
+    const interestRate = b.interestRate !== undefined ? Math.min(50, Math.max(0, NUM(b.interestRate))) : existing.interestRate;
+    const monthlyInstallment = b.monthlyInstallment !== undefined ? NUM(b.monthlyInstallment) : existing.monthlyInstallment;
     const paymentMode = b.paymentMode !== undefined
       ? ((MODES as readonly string[]).includes(String(b.paymentMode))
           ? (String(b.paymentMode) as "sekali" | "cicilan")
@@ -163,6 +169,8 @@ export async function PATCH(req: NextRequest) {
         paidAmount,
         date: b.date !== undefined ? String(b.date) : existing.date,
         dueDate: b.dueDate !== undefined ? String(b.dueDate) : existing.dueDate,
+        interestRate,
+        monthlyInstallment,
         status: computeStatus(amount, paidAmount),
         notes: b.notes !== undefined ? String(b.notes).slice(0, 300) : existing.notes,
         updatedAt: sql`(datetime('now'))`,

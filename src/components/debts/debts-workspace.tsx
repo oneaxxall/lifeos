@@ -17,7 +17,6 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { RupiahInput } from "@/components/ui/rupiah-input";
 import {
   Select,
   SelectContent,
@@ -26,6 +25,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { RupiahInput } from "@/components/ui/rupiah-input";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -40,6 +40,8 @@ export interface DebtItem {
   paidAmount: number;
   date: string;
   dueDate: string;
+  interestRate?: number;
+  monthlyInstallment?: number;
   status: "belum" | "sebagian" | "lunas";
   notes: string;
   remaining: number;
@@ -89,6 +91,8 @@ export function DebtsWorkspace() {
   const [installmentAmount, setInstallmentAmount] = React.useState(0);
   const [date, setDate] = React.useState(() => new Date().toISOString().slice(0, 10));
   const [dueDate, setDueDate] = React.useState("");
+  const [interestRate, setInterestRate] = React.useState(0);
+  const [monthlyInstallment, setMonthlyInstallment] = React.useState(0);
   const [notes, setNotes] = React.useState("");
   const [saving, setSaving] = React.useState(false);
 
@@ -131,6 +135,8 @@ export function DebtsWorkspace() {
     setInstallmentAmount(0);
     setDate(new Date().toISOString().slice(0, 10));
     setDueDate("");
+    setInterestRate(0);
+    setMonthlyInstallment(0);
     setNotes("");
     setEditing(null);
   };
@@ -155,6 +161,8 @@ export function DebtsWorkspace() {
     );
     setDate(d.date);
     setDueDate(d.dueDate);
+    setInterestRate(d.interestRate ?? 0);
+    setMonthlyInstallment(d.monthlyInstallment ?? 0);
     setNotes(d.notes);
     setFormOpen(true);
   };
@@ -182,6 +190,8 @@ export function DebtsWorkspace() {
         paidAmount: editing?.paidAmount ?? 0,
         date,
         dueDate,
+        interestRate,
+        monthlyInstallment,
         notes,
       };
       const res = await fetch("/api/debts", {
@@ -403,6 +413,12 @@ export function DebtsWorkspace() {
                           <span className="block">
                             ⏰ Jatuh tempo {format(new Date(d.dueDate + "T00:00:00"), "d MMM yyyy", { locale: id })}
                           </span>
+                        )}
+                        {d.monthlyInstallment && d.monthlyInstallment > 0 && (
+                          <span className="block">💸 Angsuran {fmtRp(d.monthlyInstallment)}/bln</span>
+                        )}
+                        {d.interestRate && d.interestRate > 0 && (
+                          <span className="block text-amber-600 dark:text-amber-400">📈 Bunga {d.interestRate}%/thn</span>
                         )}
                       </p>
 
@@ -637,6 +653,19 @@ export function DebtsWorkspace() {
                   <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className="h-9 text-sm" />
                 </label>
               </div>
+
+              {paymentMode === "cicilan" && (
+                <div className="grid grid-cols-2 gap-2">
+                  <label className="block">
+                    <span className="mb-1 block text-[10px] font-medium text-muted-foreground">Angsuran per bulan (Rp)</span>
+                    <RupiahInput value={monthlyInstallment} onChange={setMonthlyInstallment} className="h-9" placeholder="0" />
+                  </label>
+                  <label className="block">
+                    <span className="mb-1 block text-[10px] font-medium text-muted-foreground">Bunga %/tahun</span>
+                    <Input type="number" value={interestRate || ""} onChange={(e) => setInterestRate(Number(e.target.value) || 0)} className="h-9 text-sm" placeholder="0 = tanpa bunga" />
+                  </label>
+                </div>
+              )}
 
               <label className="block">
                 <span className="mb-1 block text-[10px] font-medium text-muted-foreground">Catatan (opsional)</span>

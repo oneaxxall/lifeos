@@ -3,58 +3,142 @@
 import * as React from "react";
 import {
   Briefcase,
-  Calculator,
-  GraduationCap,
+  ChevronDown,
+  CircleDollarSign,
+  Landmark,
   Loader2,
-  PiggyBank,
+  Plus,
   Save,
   ShieldAlert,
+  Sparkles,
+  Trash2,
   TrendingUp,
+  Users,
+  Wallet,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { toast } from "sonner";
 import { RupiahInput } from "@/components/ui/rupiah-input";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { computePlan, fmtRp, type PlanResult } from "@/lib/financial-plan";
+import { computePlan, fmtRp } from "@/lib/financial-plan";
+import type { FinancialAnalysis } from "@/lib/ai/financial-ai";
 
-const DEFAULT_FORM = {
-  monthlyIncome: 15000000,
-  monthlyExpense: 8000000,
-  monthlySavings: 4000000,
-  emergencyMonths: 6,
-  emergencyCurrent: 5000000,
-  stockPct: 60,
-  bondPct: 30,
-  cashPct: 10,
-  stockReturn: 12,
-  bondReturn: 6,
-  cashReturn: 4,
-  inflation: 4,
-  fireMultiple: 25,
-  childrenCount: 1,
-  childAge: 5,
-  schoolLevel: "kuliah",
-  schoolCostYear: 25000000,
-  schoolInflation: 10,
-} as const;
+/* ═══════════ Section collapsible (komponen statis) ═══════════ */
 
-type FormState = typeof DEFAULT_FORM;
+function SectionCard({
+  id,
+  icon: Icon,
+  title,
+  subtitle,
+  open,
+  onToggle,
+  children,
+}: {
+  id: string;
+  icon: React.ElementType;
+  title: string;
+  subtitle: string;
+  open: boolean;
+  onToggle: (id: string) => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="overflow-hidden rounded-xl border border-border/60 bg-card shadow-sm">
+      <button onClick={() => onToggle(open ? "" : id)} className="flex w-full items-center gap-2.5 px-4 py-3 text-left">
+        <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+          <Icon className="size-4" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-semibold">{title}</span>
+          <span className="block text-[10px] text-muted-foreground">{subtitle}</span>
+        </span>
+        <ChevronDown className={cn("size-4 shrink-0 text-muted-foreground transition-transform", open && "rotate-180")} />
+      </button>
+      {open && <div className="space-y-3 border-t border-border/40 p-4">{children}</div>}
+    </div>
+  );
+}
 
-/** Halaman Financial Planning — FIRE calculator + dana sekolah + tabungan darurat. */
+/* ═══════════ Tipe ═══════════ */
+
+interface ChildDraft {
+  id: number;
+  name: string;
+  age: number;
+  schoolLevel: string;
+  schoolCostYear: number;
+}
+
+interface DebtRow {
+  id: number;
+  party: string;
+  amount: number;
+  paidAmount: number;
+  paymentMode: string;
+  installmentCount: number;
+  installmentsPaid: number;
+  interestRate: number;
+  monthlyInstallment: number;
+  dueDate: string;
+  notes: string;
+}
+
+const LEVELS = [
+  { value: "sd", label: "SD" },
+  { value: "smp", label: "SMP" },
+  { value: "sma", label: "SMA" },
+  { value: "kuliah", label: "Kuliah" },
+];
+
+/** Halaman Financial Planning — profil lengkap + anak + cicilan + analisa AI (FIRE/dividen/darurat). */
 export function FinancialPlanWorkspace() {
-  const [form, setForm] = React.useState<FormState>({ ...DEFAULT_FORM });
-  const [result, setResult] = React.useState<PlanResult | null>(null);
+  const [form, setForm] = React.useState({
+    age: 30,
+    monthlyIncome: 15000000,
+    monthlyExpense: 8000000,
+    monthlySavings: 4000000,
+    emergencyMonths: 6,
+    emergencyCurrent: 5000000,
+    stockPct: 60,
+    bondPct: 30,
+    cashPct: 10,
+    stockReturn: 12,
+    bondReturn: 6,
+    cashReturn: 4,
+    inflation: 4,
+    fireMultiple: 25,
+    schoolInflation: 10,
+    dividendTarget: 12000000,
+    dividendYield: 5,
+  });
+  const [children, setChildren] = React.useState<ChildDraft[]>([]);
+  const [debtsList, setDebtsList] = React.useState<DebtRow[]>([]);
+  const [analysis, setAnalysis] = React.useState<FinancialAnalysis | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [saving, setSaving] = React.useState(false);
+  const [analyzing, setAnalyzing] = React.useState(false);
 
+  /* ── Section collapsible ── */
+  const [openSection, setOpenSection] = React.useState<string | null>("profil");
+  const [debtFormOpen, setDebtFormOpen] = React.useState(false);
+  const [debtDraft, setDebtDraft] = React.useState({ party: "", amount: 0, installmentCount: 1, interestRate: 0, monthlyInstallment: 0, dueDate: "" });
+  const childIdRef = React.useRef(1);
+
+  const set = (key: keyof typeof form, val: number) => setForm((prev) => ({ ...prev, [key]: val }));
+
+  const liveResult = React.useMemo(() => {
+    const p = {
+      ...form,
+      childrenCount: children.length,
+      childAge: children[0]?.age ?? 0,
+      schoolLevel: (children[0]?.schoolLevel ?? "kuliah") as "sd" | "smp" | "sma" | "kuliah",
+      schoolCostYear: children[0]?.schoolCostYear ?? 0,
+    };
+    return computePlan(p as never);
+  }, [form, children]);
+
+  /* ── Load ── */
   React.useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -64,7 +148,9 @@ export function FinancialPlanWorkspace() {
         if (cancelled) return;
         if (json.data) {
           const d = json.data;
-          setForm({
+          setForm((prev) => ({
+            ...prev,
+            age: d.age || prev.age,
             monthlyIncome: d.monthlyIncome,
             monthlyExpense: d.monthlyExpense,
             monthlySavings: d.monthlySavings,
@@ -78,16 +164,32 @@ export function FinancialPlanWorkspace() {
             cashReturn: d.cashReturn,
             inflation: d.inflation,
             fireMultiple: d.fireMultiple,
-            childrenCount: d.childrenCount,
-            childAge: d.childAge,
-            schoolLevel: d.schoolLevel,
-            schoolCostYear: d.schoolCostYear,
             schoolInflation: d.schoolInflation,
-          });
-          setResult(json.result ?? null);
+            dividendTarget: d.dividendTarget ?? prev.dividendTarget,
+            dividendYield: d.dividendYield ?? prev.dividendYield,
+          }));
+          if (json.children?.length) {
+            setChildren(
+              json.children.map((c: { id: number; name: string; age: number; schoolLevel: string; schoolCostYear: number }) => ({
+                id: c.id,
+                name: c.name,
+                age: c.age,
+                schoolLevel: c.schoolLevel,
+                schoolCostYear: c.schoolCostYear,
+              }))
+            );
+          }
+          setDebtsList(json.debts ?? []);
+          if (d.analysis) {
+            try {
+              setAnalysis(JSON.parse(d.analysis));
+            } catch {
+              setAnalysis(null);
+            }
+          }
         }
       } catch {
-        // biarkan default
+        // default
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -97,386 +199,525 @@ export function FinancialPlanWorkspace() {
     };
   }, []);
 
-  const set = (key: keyof FormState, val: number | string) =>
-    setForm((prev) => ({ ...prev, [key]: val }));
-
-  const liveResult = React.useMemo(() => computePlan(form as never), [form]);
-
+  /* ── Save ── */
   const save = async () => {
     setSaving(true);
     try {
       const res = await fetch("/api/financial-plan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, children }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Gagal");
-      setResult(json.result ?? null);
-      toast.success("Rencana keuangan tersimpan 💾");
+      toast.success("Profil keuangan tersimpan 💾");
     } catch {
-      toast.error("Gagal menyimpan rencana");
+      toast.error("Gagal menyimpan profil");
     } finally {
       setSaving(false);
     }
   };
 
-  const r = result ?? liveResult;
-  const saved = result !== null;
-
-  const numInput = (
-    label: string,
-    key: keyof FormState,
-    opts?: { prefix?: string; suffix?: string; rupiah?: boolean }
-  ) => {
-    const { prefix, suffix, rupiah } = opts ?? {};
-    return (
-      <label className="block">
-        <span className="mb-1 block text-[10px] font-medium text-muted-foreground">{label}</span>
-        <div className="relative">
-          {prefix && (
-            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
-              {prefix}
-            </span>
-          )}
-          {rupiah ? (
-            <RupiahInput
-              value={Number(form[key])}
-              onChange={(v) => set(key, v)}
-              prefix
-              className="h-8"
-            />
-          ) : (
-            <Input
-              type="number"
-              value={Number(form[key])}
-              onChange={(e) => set(key, Number(e.target.value))}
-              className={cn("h-8 text-sm", prefix && "pl-10")}
-            />
-          )}
-          {suffix && (
-            <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
-              {suffix}
-            </span>
-          )}
-        </div>
-      </label>
-    );
+  /* ── Analisa AI ── */
+  const analyze = async () => {
+    if (!liveResult) return;
+    setAnalyzing(true);
+    try {
+      const res = await fetch("/api/financial-plan/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ age: form.age, dividendTarget: form.dividendTarget }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Gagal");
+      setAnalysis(json.data);
+      toast.success("Analisa AI selesai ✨");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Gagal analisa");
+    } finally {
+      setAnalyzing(false);
+    }
   };
+
+  /* ── Anak ── */
+  const addChild = () =>
+    setChildren((prev) => [
+      ...prev,
+      { id: childIdRef.current++, name: `Anak ${prev.length + 1}`, age: 5, schoolLevel: "kuliah", schoolCostYear: 25000000 },
+    ]);
+  const updChild = (id: number, patch: Partial<ChildDraft>) =>
+    setChildren((prev) => prev.map((c) => (c.id === id ? { ...c, ...patch } : c)));
+  const delChild = (id: number) => setChildren((prev) => prev.filter((c) => c.id !== id));
+
+  /* ── Cicilan (tambah via API debts) ── */
+  const addDebt = async () => {
+    const party = debtDraft.party.trim();
+    if (!party || debtDraft.amount <= 0) {
+      toast.error("Isi nama cicilan & nominalnya 🏦");
+      return;
+    }
+    try {
+      const res = await fetch("/api/debts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "hutang",
+          party,
+          amount: debtDraft.amount,
+          paymentMode: "cicilan",
+          installmentCount: debtDraft.installmentCount,
+          interestRate: debtDraft.interestRate,
+          monthlyInstallment: debtDraft.monthlyInstallment,
+          dueDate: debtDraft.dueDate,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Gagal");
+      toast.success("Cicilan ditambahkan 🏦");
+      setDebtDraft({ party: "", amount: 0, installmentCount: 1, interestRate: 0, monthlyInstallment: 0, dueDate: "" });
+      setDebtFormOpen(false);
+      const r = await fetch("/api/financial-plan");
+      const j = await r.json();
+      setDebtsList(j.debts ?? []);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Gagal menambah cicilan");
+    }
+  };
+
+  const delDebt = async (id: number) => {
+    try {
+      const res = await fetch(`/api/debts/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error();
+      setDebtsList((prev) => prev.filter((d) => d.id !== id));
+      toast.success("Cicilan dihapus");
+    } catch {
+      toast.error("Gagal menghapus cicilan");
+    }
+  };
+
+  /* ═══ Kalkulasi dividen ═══ */
+  const dividendModal = form.dividendTarget > 0 ? Math.round(form.dividendTarget / (form.dividendYield / 100)) : 0;
+  const weightedReturn = liveResult?.weightedReturn ?? 0;
+
+
+  if (loading) {
+    return (
+      <div className="flex items-center gap-2 rounded-xl border border-border bg-card p-4 text-xs text-muted-foreground">
+        <Loader2 className="size-3.5 animate-spin" /> Memuat profil keuangan…
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-5">
+      {/* ── Header ── */}
       <header>
         <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight">
-          <Calculator className="size-6 text-primary" /> Financial Planning
+          <span className="flex size-9 items-center justify-center rounded-xl bg-primary/10">
+            <Briefcase className="size-5 text-primary" />
+          </span>
+          Financial Planning
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Rencanakan masa depan: FIRE (Financial Independence Retire Early), dana sekolah anak,
-          dan tabungan darurat — lengkap dengan alokasi investasi.
+          Profil keuangan lengkap — anak, cicilan, investasi & target dividen. AI merancang prioritas lunas & alokasi terbaik.
         </p>
       </header>
 
-      {loading ? (
-        <div className="flex items-center gap-3 rounded-xl border border-border bg-card p-4">
-          <Loader2 className="size-4 animate-spin text-primary" />
-          <p className="text-sm text-muted-foreground">Memuat…</p>
-        </div>
-      ) : (
-        <div className="grid gap-5 lg:grid-cols-[380px_1fr]">
-          {/* ── Form asumsi ── */}
-          <div className="space-y-4 lg:sticky lg:top-20 lg:self-start">
-            {/* Pemasukan & pengeluaran */}
-            <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
-              <p className="mb-3 flex items-center gap-2 text-sm font-semibold">
-                <Briefcase className="size-4 text-primary" /> Pemasukan & pengeluaran
-              </p>
-              <div className="space-y-2.5">
-                {numInput("Pemasukan per bulan", "monthlyIncome", { prefix: "Rp", rupiah: true })}
-                {numInput("Pengeluaran per bulan", "monthlyExpense", { prefix: "Rp", rupiah: true })}
-                {numInput("Nabung / investasi per bulan", "monthlySavings", { prefix: "Rp", rupiah: true })}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_380px]">
+        {/* ═══ FORM (kiri) ═══ */}
+        <div className="space-y-3">
+          <SectionCard id="profil" icon={Wallet} title="Profil & Cashflow" subtitle="Usia, pemasukan, pengeluaran, tabungan bulanan" open={openSection === "profil"} onToggle={setOpenSection}>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Usia sekarang</label>
+                <Input type="number" value={form.age || ""} onChange={(e) => set("age", Number(e.target.value) || 0)} className="h-9 text-sm" />
+              </div>
+              <div>
+                <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Tabungan per bulan</label>
+                <RupiahInput value={form.monthlySavings} onChange={(v) => set("monthlySavings", v)} className="h-9" />
               </div>
             </div>
+            <div>
+              <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Pemasukan bulanan</label>
+              <RupiahInput value={form.monthlyIncome} onChange={(v) => set("monthlyIncome", v)} className="h-9" />
+            </div>
+            <div>
+              <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Pengeluaran bulanan</label>
+              <RupiahInput value={form.monthlyExpense} onChange={(v) => set("monthlyExpense", v)} className="h-9" />
+            </div>
+          </SectionCard>
 
-            {/* Alokasi investasi */}
-            <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
-              <p className="mb-3 flex items-center gap-2 text-sm font-semibold">
-                <TrendingUp className="size-4 text-primary" /> Alokasi investasi
-              </p>
-              <div className="grid grid-cols-3 gap-2">
-                {numInput("Saham %", "stockPct", { suffix: "%" })}
-                {numInput("Obligasi %", "bondPct", { suffix: "%" })}
-                {numInput("Deposito %", "cashPct", { suffix: "%" })}
+          <SectionCard id="anak" icon={Users} title="Anak & Dana Pendidikan" subtitle="Daftar anak (bisa banyak) + biaya pendidikan target" open={openSection === "anak"} onToggle={setOpenSection}>
+            <div className="space-y-2.5">
+              {children.length === 0 && (
+                <p className="rounded-lg border border-dashed border-border/70 p-3 text-center text-[11px] text-muted-foreground">
+                  Belum ada anak — tambahkan untuk hitung dana pendidikan.
+                </p>
+              )}
+              {children.map((c, i) => (
+                <div key={c.id} className="rounded-lg border border-border/50 bg-muted/20 p-3">
+                  <div className="flex items-center gap-2">
+                    <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary">
+                      {i + 1}
+                    </span>
+                    <Input value={c.name} onChange={(e) => updChild(c.id, { name: e.target.value })} className="h-8 flex-1 text-sm" />
+                    <Button variant="ghost" size="icon" className="size-7 text-muted-foreground hover:text-destructive" onClick={() => delChild(c.id)} aria-label="Hapus anak">
+                      <Trash2 className="size-3.5" />
+                    </Button>
+                  </div>
+                  <div className="mt-2 grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="mb-0.5 block text-[9px] font-semibold uppercase text-muted-foreground">Usia</label>
+                      <Input type="number" value={c.age || ""} onChange={(e) => updChild(c.id, { age: Number(e.target.value) || 0 })} className="h-8 text-sm" />
+                    </div>
+                    <div>
+                      <label className="mb-0.5 block text-[9px] font-semibold uppercase text-muted-foreground">Jenjang target</label>
+                      <select
+                        value={c.schoolLevel}
+                        onChange={(e) => updChild(c.id, { schoolLevel: e.target.value })}
+                        className="h-8 w-full rounded-md border border-input bg-background px-2 text-sm"
+                      >
+                        {LEVELS.map((l) => (
+                          <option key={l.value} value={l.value}>
+                            {l.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                  <div className="mt-2">
+                    <label className="mb-0.5 block text-[9px] font-semibold uppercase text-muted-foreground">Biaya pendidikan per tahun (sekarang)</label>
+                    <RupiahInput value={c.schoolCostYear} onChange={(v) => updChild(c.id, { schoolCostYear: v })} className="h-8" />
+                  </div>
+                </div>
+              ))}
+              <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs" onClick={addChild}>
+                <Plus className="size-3.5" /> Tambah anak
+              </Button>
+            </div>
+          </SectionCard>
+
+          <SectionCard id="cicilan" icon={Landmark} title="Cicilan & Hutang" subtitle="Beban cicilan multiple — dianalisa AI urutan pelunasan" open={openSection === "cicilan"} onToggle={setOpenSection}>
+            <div className="space-y-2">
+              {debtsList.length === 0 && (
+                <p className="rounded-lg border border-dashed border-border/70 p-3 text-center text-[11px] text-muted-foreground">
+                  Belum ada cicilan tercatat.
+                </p>
+              )}
+              {debtsList.map((d) => {
+                const sisa = Math.max(0, d.amount - d.paidAmount);
+                return (
+                  <div key={d.id} className="rounded-lg border border-border/50 bg-muted/20 p-2.5">
+                    <div className="flex items-center gap-2">
+                      <p className="min-w-0 flex-1 truncate text-xs font-semibold">{d.party}</p>
+                      <Button variant="ghost" size="icon" className="size-6 text-muted-foreground hover:text-destructive" onClick={() => void delDebt(d.id)} aria-label="Hapus cicilan">
+                        <Trash2 className="size-3" />
+                      </Button>
+                    </div>
+                    <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-[10px] text-muted-foreground">
+                      <span>Sisa: <b className="text-foreground">{fmtRp(sisa)}</b></span>
+                      {d.monthlyInstallment > 0 && <span>Angsuran: {fmtRp(d.monthlyInstallment)}/bln</span>}
+                      {d.interestRate > 0 && <span className="text-amber-600 dark:text-amber-400">Bunga {d.interestRate}%/thn</span>}
+                      {d.dueDate && <span>Jatuh tempo: {d.dueDate}</span>}
+                      <span>{d.installmentsPaid}/{d.installmentCount}x</span>
+                    </div>
+                  </div>
+                );
+              })}
+
+              {/* Form tambah cicilan */}
+              <div className="overflow-hidden rounded-lg border border-primary/20 bg-primary/[0.04]">
+                <button onClick={() => setDebtFormOpen((o) => !o)} className="flex w-full items-center gap-1.5 px-3 py-2 text-left text-xs font-semibold text-primary">
+                  <Plus className={cn("size-3.5 transition-transform", debtFormOpen && "rotate-45")} />
+                  {debtFormOpen ? "Tutup form cicilan" : "Tambah cicilan"}
+                </button>
+                {debtFormOpen && (
+                  <div className="space-y-2 border-t border-border/40 p-3">
+                    <Input value={debtDraft.party} onChange={(e) => setDebtDraft((p) => ({ ...p, party: e.target.value }))} placeholder="Nama cicilan (mis. KPR, kredit motor)" className="h-8 text-sm" />
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="mb-0.5 block text-[9px] font-semibold uppercase text-muted-foreground">Sisa pokok</label>
+                        <RupiahInput value={debtDraft.amount} onChange={(v) => setDebtDraft((p) => ({ ...p, amount: v }))} className="h-8" />
+                      </div>
+                      <div>
+                        <label className="mb-0.5 block text-[9px] font-semibold uppercase text-muted-foreground">Tenor (x cicilan)</label>
+                        <Input type="number" value={debtDraft.installmentCount || ""} onChange={(e) => setDebtDraft((p) => ({ ...p, installmentCount: Number(e.target.value) || 1 }))} className="h-8 text-sm" />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="mb-0.5 block text-[9px] font-semibold uppercase text-muted-foreground">Angsuran/bulan</label>
+                        <RupiahInput value={debtDraft.monthlyInstallment} onChange={(v) => setDebtDraft((p) => ({ ...p, monthlyInstallment: v }))} className="h-8" />
+                      </div>
+                      <div>
+                        <label className="mb-0.5 block text-[9px] font-semibold uppercase text-muted-foreground">Bunga %/thn</label>
+                        <Input type="number" value={debtDraft.interestRate || ""} onChange={(e) => setDebtDraft((p) => ({ ...p, interestRate: Number(e.target.value) || 0 }))} className="h-8 text-sm" placeholder="0 = tanpa bunga" />
+                      </div>
+                    </div>
+                    <Input type="date" value={debtDraft.dueDate} onChange={(e) => setDebtDraft((p) => ({ ...p, dueDate: e.target.value }))} className="h-8 text-sm" />
+                    <Button size="sm" className="h-8 w-full gap-1 text-xs" onClick={() => void addDebt()}>
+                      <Landmark className="size-3.5" /> Simpan cicilan
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </SectionCard>
+
+          <SectionCard id="investasi" icon={TrendingUp} title="Investasi & Target" subtitle="Alokasi, return, FIRE, darurat & target dividen" open={openSection === "investasi"} onToggle={setOpenSection}>
+            {/* Alokasi */}
+            <div>
+              <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                Alokasi investasi (Saham {form.stockPct}% · Obligasi {form.bondPct}% · Kas {form.cashPct}%)
+              </label>
+              <div className="flex h-2.5 overflow-hidden rounded-full bg-muted">
+                <div className="bg-primary/80" style={{ width: `${form.stockPct}%` }} />
+                <div className="bg-sky-500/70" style={{ width: `${form.bondPct}%` }} />
+                <div className="bg-amber-500/70" style={{ width: `${form.cashPct}%` }} />
               </div>
               <div className="mt-2 grid grid-cols-3 gap-2">
-                {numInput("Return saham", "stockReturn", { suffix: "%" })}
-                {numInput("Return obligasi", "bondReturn", { suffix: "%" })}
-                {numInput("Return deposito", "cashReturn", { suffix: "%" })}
-              </div>
-              <div className="mt-2 grid grid-cols-2 gap-2">
-                {numInput("Inflasi", "inflation", { suffix: "%" })}
-                {numInput("Pengali FIRE (x)", "fireMultiple", { suffix: "x" })}
-              </div>
-            </div>
-
-            {/* Dana darurat */}
-            <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
-              <p className="mb-3 flex items-center gap-2 text-sm font-semibold">
-                <ShieldAlert className="size-4 text-amber-500" /> Tabungan darurat
-              </p>
-              <div className="grid grid-cols-2 gap-2">
-                {numInput("Target (x pengeluaran)", "emergencyMonths", { suffix: "x" })}
-                {numInput("Sudah terkumpul", "emergencyCurrent", { prefix: "Rp", rupiah: true })}
-              </div>
-            </div>
-
-            {/* Dana sekolah */}
-            <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
-              <p className="mb-3 flex items-center gap-2 text-sm font-semibold">
-                <GraduationCap className="size-4 text-indigo-500" /> Dana sekolah anak
-              </p>
-              <div className="space-y-2.5">
-                <div className="grid grid-cols-2 gap-2">
-                  {numInput("Jumlah anak", "childrenCount", { suffix: "anak" })}
-                  {numInput("Usia anak tertua", "childAge", { suffix: "thn" })}
+                <div>
+                  <label className="mb-0.5 block text-[9px] font-semibold uppercase text-muted-foreground">Saham %</label>
+                  <Input type="number" value={form.stockPct || ""} onChange={(e) => set("stockPct", Number(e.target.value) || 0)} className="h-8 text-sm" />
                 </div>
                 <div>
-                  <span className="mb-1 block text-[10px] font-medium text-muted-foreground">
-                    Jenjang target
-                  </span>
-                  <Select value={form.schoolLevel} onValueChange={(v) => set("schoolLevel", v)}>
-                    <SelectTrigger className="h-8 text-sm">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="sd">SD (7 thn)</SelectItem>
-                      <SelectItem value="smp">SMP (13 thn)</SelectItem>
-                      <SelectItem value="sma">SMA (16 thn)</SelectItem>
-                      <SelectItem value="kuliah">Kuliah (19 thn)</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <label className="mb-0.5 block text-[9px] font-semibold uppercase text-muted-foreground">Obligasi %</label>
+                  <Input type="number" value={form.bondPct || ""} onChange={(e) => set("bondPct", Number(e.target.value) || 0)} className="h-8 text-sm" />
                 </div>
-                <div className="grid grid-cols-2 gap-2">
-                  {numInput("Biaya/thn sekarang", "schoolCostYear", { prefix: "Rp", rupiah: true })}
-                  {numInput("Inflasi pendidikan", "schoolInflation", { suffix: "%" })}
+                <div>
+                  <label className="mb-0.5 block text-[9px] font-semibold uppercase text-muted-foreground">Kas %</label>
+                  <Input type="number" value={form.cashPct || ""} onChange={(e) => set("cashPct", Number(e.target.value) || 0)} className="h-8 text-sm" />
                 </div>
               </div>
             </div>
-
-            <Button onClick={() => void save()} disabled={saving} className="w-full gap-2">
-              {saving ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
-              {saving ? "Menyimpan…" : saved ? "Simpan & perbarui" : "Simpan rencana"}
-            </Button>
-          </div>
-
-          {/* ── Hasil ── */}
-          <div className="space-y-5">
-            {/* Ringkasan utama */}
-            <div className="rounded-xl border border-border bg-gradient-to-br from-primary/[0.07] via-card to-card p-5 shadow-sm">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                    Savings rate
-                  </p>
-                  <p className="mt-1 text-3xl font-bold text-primary">{r.savingsRatePct}%</p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">
-                    dari pemasukan per bulan ({fmtRp(r.annualSavings / 12)}/bulan)
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                    Return portofolio (tertimbang)
-                  </p>
-                  <p className="mt-1 text-3xl font-bold text-emerald-500">{r.weightedReturn}%</p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">
-                    saham {form.stockPct}% · obligasi {form.bondPct}% · deposito {form.cashPct}%
-                  </p>
-                </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="mb-0.5 block text-[9px] font-semibold uppercase text-muted-foreground">Return saham %</label>
+                <Input type="number" value={form.stockReturn || ""} onChange={(e) => set("stockReturn", Number(e.target.value) || 0)} className="h-8 text-sm" />
               </div>
-              <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-muted">
-                <div
-                  className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-primary"
-                  style={{ width: `${Math.min(100, r.savingsRatePct)}%` }}
-                />
+              <div>
+                <label className="mb-0.5 block text-[9px] font-semibold uppercase text-muted-foreground">Inflasi %</label>
+                <Input type="number" value={form.inflation || ""} onChange={(e) => set("inflation", Number(e.target.value) || 0)} className="h-8 text-sm" />
+              </div>
+            </div>
+
+            {/* Darurat */}
+            <div className="rounded-lg border border-border/50 bg-muted/20 p-2.5">
+              <p className="flex items-center gap-1 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">
+                <ShieldAlert className="size-3" /> Dana darurat
+              </p>
+              <div className="mt-1.5 grid grid-cols-2 gap-2">
+                <div>
+                  <label className="mb-0.5 block text-[9px] font-semibold uppercase text-muted-foreground">Terkumpul</label>
+                  <RupiahInput value={form.emergencyCurrent} onChange={(v) => set("emergencyCurrent", v)} className="h-8" />
+                </div>
+                <div>
+                  <label className="mb-0.5 block text-[9px] font-semibold uppercase text-muted-foreground">Target (x pengeluaran)</label>
+                  <Input type="number" value={form.emergencyMonths || ""} onChange={(e) => set("emergencyMonths", Number(e.target.value) || 6)} className="h-8 text-sm" />
+                </div>
               </div>
             </div>
 
             {/* FIRE */}
-            <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
-              <p className="mb-3 flex items-center gap-2 text-sm font-semibold">
-                <PiggyBank className="size-4 text-rose-500" /> FIRE — Financial Independence, Retire Early
+            <div className="rounded-lg border border-border/50 bg-muted/20 p-2.5">
+              <p className="flex items-center gap-1 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">
+                <CircleDollarSign className="size-3" /> Target FIRE (Financial Independence)
               </p>
-              <div className="grid grid-cols-1 grid-cols-2 gap-3 sm:grid-cols-4">
+              <div className="mt-1.5 grid grid-cols-2 gap-2">
                 <div>
-                  <p className="text-[10px] text-muted-foreground">Target FIRE</p>
-                  <p className="mt-1 text-lg font-bold">{fmtRp(r.fireTargetNow)}</p>
-                  <p className="text-[10px] text-muted-foreground">{form.fireMultiple}× pengeluaran tahunan</p>
+                  <label className="mb-0.5 block text-[9px] font-semibold uppercase text-muted-foreground">Pengali FIRE</label>
+                  <Input type="number" value={form.fireMultiple || ""} onChange={(e) => set("fireMultiple", Number(e.target.value) || 25)} className="h-8 text-sm" />
                 </div>
                 <div>
-                  <p className="text-[10px] text-muted-foreground">Pengeluaran/thn (sekarang)</p>
-                  <p className="mt-1 text-lg font-bold">{fmtRp(r.annualExpenseNow)}</p>
-                  <p className="text-[10px] text-muted-foreground">naik {form.inflation}% per tahun</p>
-                </div>
-                <div>
-                  <p className="text-[10px] text-muted-foreground">Tabungan/thn</p>
-                  <p className="mt-1 text-lg font-bold">{fmtRp(r.annualSavings)}</p>
-                  <p className="text-[10px] text-muted-foreground">dari nabung bulanan</p>
-                </div>
-                <div>
-                  <p className="text-[10px] text-muted-foreground">Estimasi FIRE</p>
-                  <p className={cn("mt-1 text-lg font-bold", r.fireReached ? "text-emerald-500" : "")}>
-                    {r.fireReached ? `${r.yearsToFire} tahun` : "> 60 tahun"}
-                  </p>
-                  <p className="text-[10px] text-muted-foreground">
-                    {r.fireAge ? `usia ±${r.fireAge} tahun` : "perlu nabung lebih"}
-                  </p>
+                  <label className="mb-0.5 block text-[9px] font-semibold uppercase text-muted-foreground">Inflasi pendidikan %</label>
+                  <Input type="number" value={form.schoolInflation || ""} onChange={(e) => set("schoolInflation", Number(e.target.value) || 10)} className="h-8 text-sm" />
                 </div>
               </div>
-              {r.fireReached ? (
-                <p className="mt-3 rounded-lg bg-emerald-500/10 px-3 py-2 text-xs text-emerald-600 dark:text-emerald-400">
-                  🎉 Kamu bisa FIRE dalam ±{r.yearsToFire} tahun (usia ±{r.fireAge}) dengan
-                  tabungan {fmtRp(r.annualSavings)}/tahun dan return {r.weightedReturn}%.
-                </p>
-              ) : (
-                <p className="mt-3 rounded-lg bg-amber-500/10 px-3 py-2 text-xs text-amber-600 dark:text-amber-400">
-                  ⚠️ Dengan asumsi saat ini, target FIRE belum tercapai dalam 60 tahun. Coba
-                  naikkan nabung bulanan atau alokasi saham.
+            </div>
+
+            {/* Dividen */}
+            <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/[0.06] p-2.5">
+              <p className="flex items-center gap-1 text-[9px] font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-400">
+                <TrendingUp className="size-3" /> Target dividen pasif
+              </p>
+              <div className="mt-1.5 grid grid-cols-2 gap-2">
+                <div>
+                  <label className="mb-0.5 block text-[9px] font-semibold uppercase text-muted-foreground">Dividen target / tahun</label>
+                  <RupiahInput value={form.dividendTarget} onChange={(v) => set("dividendTarget", v)} className="h-8" />
+                </div>
+                <div>
+                  <label className="mb-0.5 block text-[9px] font-semibold uppercase text-muted-foreground">Yield dividen %</label>
+                  <Input type="number" value={form.dividendYield || ""} onChange={(e) => set("dividendYield", Number(e.target.value) || 5)} className="h-8 text-sm" />
+                </div>
+              </div>
+              {dividendModal > 0 && (
+                <p className="mt-1.5 text-[10px] text-muted-foreground">
+                  Butuh modal <b className="text-emerald-600 dark:text-emerald-400">{fmtRp(dividendModal)}</b> untuk dividen {fmtRp(form.dividendTarget)}/tahun @ {form.dividendYield}%
                 </p>
               )}
             </div>
+          </SectionCard>
 
-            {/* Tabungan darurat */}
-            <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
-              <p className="mb-3 flex items-center gap-2 text-sm font-semibold">
-                <ShieldAlert className="size-4 text-amber-500" /> Tabungan darurat
-              </p>
-              <div className="flex flex-wrap items-center gap-4">
-                <div className="flex-1">
-                  <div className="flex items-baseline justify-between">
-                    <p className="text-xs text-muted-foreground">
-                      {fmtRp(form.emergencyCurrent)} / {fmtRp(r.emergencyTarget)}
-                    </p>
-                    <p className="text-sm font-bold">{r.emergencyProgressPct}%</p>
-                  </div>
-                  <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-muted">
-                    <div
-                      className={cn(
-                        "h-full rounded-full transition-all",
-                        r.emergencyReached ? "bg-emerald-500" : "bg-amber-500"
-                      )}
-                      style={{ width: `${r.emergencyProgressPct}%` }}
-                    />
-                  </div>
-                </div>
-                <div className="text-right">
-                  <p className="text-[10px] text-muted-foreground">Estimasi capai target</p>
-                  <p className="text-lg font-bold">
-                    {r.emergencyReached
-                      ? "Sudah tercapai 🎉"
-                      : r.emergencyMonthsToReach !== null
-                        ? `±${r.emergencyMonthsToReach} bulan`
-                        : "—"}
-                  </p>
-                  {!r.emergencyReached && r.emergencyGap > 0 && (
-                    <p className="text-[10px] text-muted-foreground">
-                      kurang {fmtRp(r.emergencyGap)}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Dana sekolah */}
-            <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
-              <p className="mb-3 flex items-center gap-2 text-sm font-semibold">
-                <GraduationCap className="size-4 text-indigo-500" /> Dana sekolah anak
-              </p>
-              <div className="grid grid-cols-1 grid-cols-2 gap-3 sm:grid-cols-3">
-                <div>
-                  <p className="text-[10px] text-muted-foreground">Sisa waktu</p>
-                  <p className="mt-1 text-lg font-bold">{r.schoolYearsLeft} tahun</p>
-                  <p className="text-[10px] text-muted-foreground">
-                    {form.childrenCount} anak · usia {form.childAge}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-[10px] text-muted-foreground">Kebutuhan saat masuk (est.)</p>
-                  <p className="mt-1 text-lg font-bold">{fmtRp(r.schoolFutureCost)}</p>
-                  <p className="text-[10px] text-muted-foreground">
-                    inflasi pendidikan {form.schoolInflation}%/thn
-                  </p>
-                </div>
-                <div>
-                  <p className="text-[10px] text-muted-foreground">Tabungan per bulan</p>
-                  <p className="mt-1 text-lg font-bold text-indigo-500">
-                    {r.schoolCostPerMonth > 0 ? fmtRp(r.schoolCostPerMonth) : "—"}
-                  </p>
-                  <p className="text-[10px] text-muted-foreground">
-                    selama {r.schoolYearsLeft} tahun
-                  </p>
-                </div>
-              </div>
-              {r.schoolYearsLeft <= 0 && (
-                <p className="mt-3 rounded-lg bg-amber-500/10 px-3 py-2 text-xs text-amber-600 dark:text-amber-400">
-                  ⚠️ Usia anak sudah melewati jenjang ini — pilih jenjang berikutnya.
-                </p>
-              )}
-            </div>
-
-            {/* Grafik proyeksi */}
-            <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
-              <p className="mb-3 flex items-center gap-2 text-sm font-semibold">
-                <TrendingUp className="size-4 text-primary" /> Proyeksi portofolio menuju FIRE
-              </p>
-              <div className="space-y-1">
-                {r.projection.length === 0 ? (
-                  <p className="py-4 text-center text-sm text-muted-foreground">
-                    Belum ada proyeksi.
-                  </p>
-                ) : (
-                  <>
-                    {/* Bar per 5 tahun */}
-                    <div className="flex items-end gap-1.5 pt-2" style={{ height: 140 }}>
-                      {r.projection
-                        .filter((_, i) => i % 3 === 0)
-                        .map((pt) => {
-                          const maxVal = Math.max(
-                            ...r.projection.map((x) => x.fireTarget),
-                            1
-                          );
-                          const h = Math.max(4, (pt.portfolio / maxVal) * 130);
-                          return (
-                            <div
-                              key={pt.year}
-                              className="flex-1"
-                              title={`Tahun ${pt.year} (usia ${pt.age}): ${fmtRp(pt.portfolio)}`}
-                            >
-                              <div
-                                className={cn(
-                                  "w-full rounded-t transition-all",
-                                  pt.fireReached ? "bg-emerald-500" : "bg-primary/70"
-                                )}
-                                style={{ height: h }}
-                              />
-                            </div>
-                          );
-                        })}
-                    </div>
-                    <div className="flex justify-between text-[9px] text-muted-foreground">
-                      <span>Tahun 1</span>
-                      <span>Tahun {Math.floor(r.projection.length / 2)}</span>
-                      <span>Tahun {r.projection.length}</span>
-                    </div>
-                    <p className="mt-2 text-[10px] text-muted-foreground">
-                      Tinggi bar ≈ nilai portofolio (bar hijau = FIRE tercapai). Klik bar untuk
-                      detail nilai.
-                    </p>
-                  </>
-                )}
-              </div>
-            </div>
+          <div className="flex items-center gap-2">
+            <Button onClick={() => void save()} disabled={saving} className="h-10 gap-1.5 px-5">
+              {saving ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
+              Simpan profil
+            </Button>
+            <Button
+              variant="outline"
+              className="h-10 gap-1.5 px-5"
+              onClick={() => void analyze()}
+              disabled={analyzing}
+            >
+              {analyzing ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
+              {analysis ? "Analisa ulang" : "Analisa AI"}
+            </Button>
           </div>
         </div>
-      )}
+
+        {/* ═══ HASIL (kanan) ═══ */}
+        <div className="space-y-3">
+          {/* Ringkasan live */}
+          <div className="rounded-xl border border-border/60 bg-card p-4 shadow-sm">
+            <p className="flex items-center gap-1.5 text-xs font-semibold">
+              <Wallet className="size-3.5 text-primary" /> Ringkasan rencana
+            </p>
+            <div className="mt-2.5 space-y-2 text-[11px]">
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Dana darurat</span>
+                <span className={cn("font-semibold", liveResult.emergencyReached ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400")}>
+                  {liveResult.emergencyReached ? "Tercapai ✅" : `${fmtRp(liveResult.emergencyTarget)} (gap ${fmtRp(liveResult.emergencyGap)})`}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">FIRE (${form.fireMultiple}x)</span>
+                <span className="font-semibold">
+                  {liveResult.fireReached ? "Tercapai ✅" : `${liveResult.yearsToFire ?? "—"} tahun (usia ${liveResult.fireAge ?? "—"})`}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Return tertimbang</span>
+                <span className="font-semibold">{weightedReturn.toFixed(1)}%/thn</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Saving rate</span>
+                <span className="font-semibold">{liveResult.savingsRatePct}%</span>
+              </div>
+              {children.length > 0 && (
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Dana sekolah (anak pertama)</span>
+                  <span className="font-semibold">{fmtRp(liveResult.schoolCostPerMonth)}/bln</span>
+                </div>
+              )}
+              {dividendModal > 0 && (
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Modal dividen</span>
+                  <span className="font-semibold text-emerald-600 dark:text-emerald-400">{fmtRp(dividendModal)}</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Panel AI */}
+          <div className="overflow-hidden rounded-xl border border-primary/25 bg-gradient-to-br from-primary/8 via-card to-card shadow-sm">
+            <div className="flex items-center gap-2 border-b border-border/40 bg-muted/20 px-4 py-3">
+              <span className="flex size-8 items-center justify-center rounded-full bg-primary/10 text-primary">
+                <Sparkles className="size-4" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold">Analisa AI</p>
+                <p className="text-[10px] text-muted-foreground">Prioritas lunas cicilan & alokasi dana</p>
+              </div>
+              {analysis && (
+                <Button variant="ghost" size="sm" className="h-7 gap-1 text-[11px]" onClick={() => void analyze()} disabled={analyzing}>
+                  {analyzing ? <Loader2 className="size-3 animate-spin" /> : <Sparkles className="size-3" />}
+                  Ulang
+                </Button>
+              )}
+            </div>
+
+            {!analysis ? (
+              <div className="space-y-2 p-4">
+                <p className="text-[11px] leading-relaxed text-muted-foreground">
+                  Simpan profil lalu klik <b>Analisa AI</b> — AI akan menyusun urutan pelunasan cicilan, alokasi dana darurat/investasi, dan roadmap menuju dividen pasif.
+                </p>
+                <div className="flex items-center gap-2 rounded-lg border border-border/50 bg-muted/20 p-2.5 text-[10px] text-muted-foreground">
+                  <ShieldAlert className="size-3.5 shrink-0 text-primary" />
+                  Analisa ini anti-riba: tidak ada saran bunga — cicilan diurutkan dari sisa kecil & tenor pendek.
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-3 p-4">
+                <p className="rounded-lg border border-border/50 bg-muted/20 p-2.5 text-[11px] leading-relaxed">{analysis.ringkasan}</p>
+
+                {/* Prioritas lunas */}
+                {analysis.prioritasLunas.length > 0 && (
+                  <div>
+                    <p className="mb-1.5 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">🏆 Urutan lunasi cicilan</p>
+                    <ol className="space-y-1.5">
+                      {analysis.prioritasLunas.map((p, i) => (
+                        <li key={i} className="flex items-start gap-2 rounded-lg border border-border/50 bg-muted/20 p-2">
+                          <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/15 text-[10px] font-bold text-primary">
+                            {i + 1}
+                          </span>
+                          <span className="text-[10px] leading-relaxed">
+                            <b>{p.nama}</b> — {p.alasan}
+                          </span>
+                        </li>
+                      ))}
+                    </ol>
+                  </div>
+                )}
+
+                {/* Alokasi */}
+                <div className="grid grid-cols-2 gap-1.5">
+                  <div className="rounded-lg bg-muted/40 p-2">
+                    <p className="text-[8px] font-semibold uppercase text-muted-foreground">Dana darurat</p>
+                    <p className="mt-0.5 text-[10px] leading-snug">{analysis.alokasi.danaDarurat}</p>
+                  </div>
+                  <div className="rounded-lg bg-muted/40 p-2">
+                    <p className="text-[8px] font-semibold uppercase text-muted-foreground">Investasi bulanan</p>
+                    <p className="mt-0.5 text-[10px] leading-snug">{analysis.alokasi.investasiBulanan}</p>
+                  </div>
+                  <div className="rounded-lg bg-emerald-500/10 p-2">
+                    <p className="text-[8px] font-semibold uppercase text-emerald-600 dark:text-emerald-400">Modal dividen</p>
+                    <p className="mt-0.5 text-[10px] leading-snug text-foreground/85">{analysis.alokasi.modalDividen}</p>
+                  </div>
+                  <div className="rounded-lg bg-emerald-500/10 p-2">
+                    <p className="text-[8px] font-semibold uppercase text-emerald-600 dark:text-emerald-400">Estimasi tercapai</p>
+                    <p className="mt-0.5 text-[10px] leading-snug text-foreground/85">{analysis.alokasi.estimasiTahunDividen}</p>
+                  </div>
+                </div>
+
+                {/* Roadmap */}
+                {analysis.roadmap.length > 0 && (
+                  <div>
+                    <p className="mb-1.5 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">🗺️ Roadmap</p>
+                    <div className="space-y-1">
+                      {analysis.roadmap.map((r, i) => (
+                        <div key={i} className="flex items-start gap-2 text-[10px] leading-relaxed">
+                          <span className="mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full bg-primary/15 text-[8px] font-bold text-primary">{i + 1}</span>
+                          <span className="text-foreground/85">{r}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {analysis.catatanAntiRiba && (
+                  <p className="rounded-lg border border-emerald-500/25 bg-emerald-500/[0.06] p-2.5 text-[10px] leading-relaxed text-emerald-700 dark:text-emerald-300">
+                    🕌 {analysis.catatanAntiRiba}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+
+          <p className="px-1 text-[10px] leading-relaxed text-muted-foreground">
+            💡 Hasil analisa tersimpan otomatis — tidak berbayar saat dibuka ulang. Klik &quot;Analisa ulang&quot; untuk fresh dari kondisi terbaru.
+          </p>
+        </div>
+      </div>
     </div>
   );
 }
