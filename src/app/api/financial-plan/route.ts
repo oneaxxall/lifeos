@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { desc, eq, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { financialPlans } from "@/lib/db/schema";
+import { financialPlans, financialChildren, debts } from "@/lib/db/schema";
 import { computePlan, type PlanInput } from "@/lib/financial-plan";
 
 const NUM = (v: unknown, def: number) => {
@@ -37,17 +37,23 @@ function toInput(row: Record<string, unknown>): PlanInput {
   };
 }
 
-/** GET /api/financial-plan — profil tersimpan + hasil kalkulasi terbaru. */
+/** GET /api/financial-plan — profil + anak + cicilan + hasil kalkulasi. */
 export async function GET() {
   const row = db.select().from(financialPlans).orderBy(desc(financialPlans.updatedAt)).limit(1).get();
+  const children = row ? db.select().from(financialChildren).all() : [];
+  const debtsList = db
+    .select()
+    .from(debts)
+    .where(sql`${debts.type} = 'hutang' AND ${debts.paymentMode} = 'cicilan'`)
+    .all();
   if (!row) {
-    return NextResponse.json({ data: null });
+    return NextResponse.json({ data: null, children: [], debts: [] });
   }
   const result = computePlan(toInput(row as unknown as Record<string, unknown>));
-  return NextResponse.json({ data: row, result });
+  return NextResponse.json({ data: row, children, debts: debtsList, result });
 }
 
-/** POST /api/financial-plan — simpan/update profil asumsi (satu profil aktif). */
+/** POST /api/financial-plan — simpan/update profil + daftar anak (replace). */
 export async function POST(req: NextRequest) {
   try {
     const b = await req.json();
@@ -80,23 +86,39 @@ export async function POST(req: NextRequest) {
       childAge: Math.min(30, Math.max(0, NUM(b.childAge, 0))),
       schoolLevel,
       schoolCostYear: NUM(b.schoolCostYear, 0),
-      schoolInflation: Math.min(25, Math.max(0, NUM(b.schoolInflation, 10))),
+      schoolInflation: Math.min(20, Math.max(1, NUM(b.schoolInflation, 10))),
+      age: Math.min(90, Math.max(0, NUM(b.age, 0))),
+      dividendTarget: NUM(b.dividendTarget, 0),
+      dividendYield: Math.min(20, Math.max(1, NUM(b.dividendYield, 5))),
       updatedAt: sql`(datetime('now'))`,
     };
 
-    // Upsert: pakai row pertama yang ada (satu profil aktif)
     const existing = db.select().from(financialPlans).limit(1).get();
-    let row;
-    if (existing) {
-      row = db.update(financialPlans).set(values).where(eq(financialPlans.id, existing.id)).returning().get();
-    } else {
-      row = db.insert(financialPlans).values(values).returning().get();
+    const row = existing
+      ? db.update(financialPlans).set(values).where(eq(financialPlans.id, existing.id)).returning().get()
+      : db.insert(financialPlans).values(values).returning().get();
+
+    // Anak: replace seluruh daftar
+    if (Array.isArray(b.children)) {
+      await db.delete(financialChildren).run();
+      for (const c of b.children) {
+        const name = String(c.name || "").trim();
+        if (!name) continue;
+        await db
+          .insert(financialChildren)
+          .values({
+            name,
+            age: Math.min(40, Math.max(0, NUM(c.age, 0))),
+            schoolLevel: ["sd", "smp", "sma", "kuliah"].includes(String(c.schoolLevel)) ? String(c.schoolLevel) : "kuliah",
+            schoolCostYear: NUM(c.schoolCostYear, 0),
+          })
+          .run();
+      }
     }
 
     const result = computePlan(toInput(row as unknown as Record<string, unknown>));
-    return NextResponse.json({ data: row, result }, { status: 201 });
-  } catch (err) {
-    console.error("POST /api/financial-plan error:", err);
+    return NextResponse.json({ ok: true, data: row, result });
+  } catch {
     return NextResponse.json({ error: "Gagal menyimpan rencana" }, { status: 500 });
   }
 }

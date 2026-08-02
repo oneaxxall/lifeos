@@ -232,6 +232,13 @@
       "when": 1785618331065,
       "tag": "0032_content-affiliate",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "6",
+      "when": 1785668311667,
+      "tag": "0033_financial-upgrade",
+      "breakpoints": true
     }
   ]
 }

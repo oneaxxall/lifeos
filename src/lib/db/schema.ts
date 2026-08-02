@@ -711,6 +711,32 @@ export const financialPlans = sqliteTable("financial_plans", {
   schoolCostYear: integer("school_cost_year").notNull().default(0),
   /** Inflasi pendidikan (%) — default 10 */
   schoolInflation: integer("school_inflation").notNull().default(10),
+  /** Usia sekarang (fallback bila life_profile tidak terisi) */
+  age: integer("age").notNull().default(0),
+  /** Target dividen per tahun (Rp) */
+  dividendTarget: integer("dividend_target").notNull().default(0),
+  /** Yield dividen rata-rata (%) — default 5 */
+  dividendYield: integer("dividend_yield").notNull().default(5),
+  /** Hasil analisa AI (JSON) — tersimpan untuk ditampilkan ulang */
+  analysis: text("analysis").default(""),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+  updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
+});
+
+/* ═══════════ Financial Children (anak — dana pendidikan multiple) ═══════════ */
+
+export const financialChildren = sqliteTable("financial_children", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  /** Nama anak */
+  name: text("name").notNull(),
+  /** Usia anak (tahun) */
+  age: integer("age").notNull().default(0),
+  /** Jenjang target: sd/smp/sma/kuliah */
+  schoolLevel: text("school_level").notNull().default("kuliah"),
+  /** Biaya per tahun sekarang (Rp) */
+  schoolCostYear: integer("school_cost_year").notNull().default(0),
   createdAt: text("created_at")
     .notNull()
     .default(sql`(datetime('now'))`),
@@ -796,6 +822,10 @@ export const debts = sqliteTable("debts", {
   date: text("date").notNull().default(sql`(date('now'))`),
   /** Jatuh tempo (opsional) */
   dueDate: text("due_date").default(""),
+  /** Bunga tahunan (%) — 0 = tanpa bunga (anti riba) */
+  interestRate: integer("interest_rate").notNull().default(0),
+  /** Angsuran per bulan (Rp) — mode cicilan */
+  monthlyInstallment: integer("monthly_installment").notNull().default(0),
   /** Status: belum | sebagian | lunas (dihitung dari paidAmount) */
   status: text("status", { enum: ["belum", "sebagian", "lunas"] }).notNull().default("belum"),
   /** Catatan */
