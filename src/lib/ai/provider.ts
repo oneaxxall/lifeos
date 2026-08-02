@@ -57,7 +57,31 @@ export function getModel(): LanguageModel {
   return cachedModel;
 }
 
+let cachedChatModel: LanguageModel | null = null;
+
+/**
+ * Model CHAT COMPLETIONS — untuk streamText.
+ * (createOpenAI()(model) default memakai Responses API yang tidak didukung
+ * beberapa provider OpenAI-compatible seperti opencode-go → stream kosong.
+ * `.chat()` memaksa /chat/completions yang terbukti streaming normal.)
+ */
+export function getChatModel(): LanguageModel {
+  if (cachedChatModel) return cachedChatModel;
+  const { apiKey, model, baseURL } = getEnv();
+  if (!apiKey) {
+    throw new Error(
+      "AI_API_KEY belum di-set. Tambahkan ke .env.local — lihat .env.example"
+    );
+  }
+  cachedChatModel = createOpenAI({
+    apiKey,
+    ...(baseURL ? { baseURL } : {}),
+  }).chat(model);
+  return cachedChatModel;
+}
+
 /** Reset cache (dipakai saat testing / ganti env) */
 export function resetModelCache() {
   cachedModel = null;
+  cachedChatModel = null;
 }

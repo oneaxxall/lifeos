@@ -15,6 +15,7 @@ import {
   Home,
   Images,
   Library,
+  MessageSquareText,
   Moon,
   NotebookPen,
   Quote,
@@ -47,6 +48,7 @@ export const navGroups: NavGroup[] = [
     label: "Inti",
     items: [
       { title: "Beranda", href: "/", icon: Home, description: "Dashboard & insight AI" },
+      { title: "LifeOS Chat", href: "/chat", icon: MessageSquareText, description: "Chat AI konteks per fitur" },
       { title: "Knowledge", href: "/knowledge", icon: Library, description: "Second brain & memori AI" },
       { title: "Insights", href: "/insights", icon: Sparkles, description: "Hub AI lintas fitur" },
       { title: "Quotes", href: "/quotes", icon: Quote, description: "Koleksi & riwayat quote harian" },

@@ -253,6 +253,13 @@
       "when": 1785674009808,
       "tag": "0035_quote-topics",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "6",
+      "when": 1785676248869,
+      "tag": "0036_lifeos-chat",
+      "breakpoints": true
     }
   ]
 }

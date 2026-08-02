@@ -11,7 +11,7 @@ export function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="hidden h-full w-60 shrink-0 flex-col border-r border-border bg-sidebar text-sidebar-foreground md:flex">
+    <aside className="hidden h-full w-60 shrink-0 flex-col border-r border-border bg-sidebar text-sidebar-foreground animate-in fade-in slide-in-from-left-4 [animation-duration:300ms] md:flex">
       {/* Logo — tinggi sama dengan header (h-16), border bottom sejajar */}
       <Link
         href="/"

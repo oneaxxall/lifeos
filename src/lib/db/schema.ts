@@ -669,6 +669,34 @@ export const quoteTopics = sqliteTable("quote_topics", {
     .default(sql`(datetime('now'))`),
 });
 
+/* ═══════════ LifeOS Chat (session & pesan multi-konteks) ═══════════ */
+
+export const chatSessions = sqliteTable("chat_sessions", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  /** Judul otomatis dari pesan pertama */
+  title: text("title").notNull().default("Percakapan baru"),
+  /** Konteks fitur yang dipilih (knowledge, todos, finance, dst.) */
+  context: text("context").notNull().default("umum"),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+  updatedAt: text("updated_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+});
+
+export const chatMessages = sqliteTable("chat_messages", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  sessionId: integer("session_id")
+    .notNull()
+    .references(() => chatSessions.id, { onDelete: "cascade" }),
+  role: text("role", { enum: ["user", "assistant"] }).notNull(),
+  message: text("message").notNull(),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+});
+
 /* ═══════════ Pomodoro Technique ═══════════ */
 
 export const pomodoroSessions = sqliteTable("pomodoro_sessions", {
