@@ -33,6 +33,7 @@ import ReactMarkdown from "react-markdown";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { CHAT_FEATURES, type ChatFeatureKey } from "@/lib/chat-features";
+import type { ChatAction } from "@/lib/ai/chat-actions";
 
 interface SessionRow {
   id: number;
@@ -104,6 +105,21 @@ const fmtTime = (iso: string) => {
   }
 };
 
+const describeAction = (a: ChatAction): string => {
+  switch (a.action) {
+    case "create_todo":
+      return `Buat todo: "${a.title}"${a.priority ? ` (prioritas ${a.priority})` : ""}${a.dueDate ? ` — jatuh tempo ${a.dueDate}` : ""}`;
+    case "create_transaction":
+      return `Catat ${a.type === "masuk" ? "pemasukan" : "pengeluaran"}: ${a.amount.toLocaleString("id-ID")}${a.description ? ` — ${a.description}` : ""}`;
+    case "create_knowledge":
+      return `Simpan catatan: "${a.title}"`;
+    case "complete_todo":
+      return `Tandai todo selesai: "${a.title}"`;
+    default:
+      return "Aksi tidak diketahui";
+  }
+};
+
 const mdComponents = {
   strong: ({ children }: { children?: React.ReactNode }) => <strong className="font-bold text-foreground">{children}</strong>,
   p: ({ children }: { children?: React.ReactNode }) => <p className="my-0.5">{children}</p>,
@@ -142,6 +158,8 @@ export function LifeOSChatWorkspace() {
   const [visibleDate, setVisibleDate] = React.useState("");
   const [contextOpen, setContextOpen] = React.useState(true);
   const [ctxQuery, setCtxQuery] = React.useState("");
+  const [pendingAction, setPendingAction] = React.useState<{ message: string; action: ChatAction } | null>(null);
+  const [executingAction, setExecutingAction] = React.useState(false);
   const scrollRef = React.useRef<HTMLDivElement | null>(null);
   const streamRef = React.useRef<AbortController | null>(null);
 
@@ -280,18 +298,13 @@ export function LifeOSChatWorkspace() {
     }
   };
 
-  const send = async () => {
-    const m = input.trim();
-    if (!m || streaming) return;
+  /** Stream jawaban AI (setelah lolos deteksi aksi atau user batal). */
+  const streamOnly = async (m: string, now: string) => {
     let sid = activeId;
     if (sid === null) {
       sid = await createSession();
       if (sid === null) return;
     }
-    setInput("");
-    const now = new Date().toISOString();
-    const optimistic: MessageRow[] = [...messages, { id: Date.now(), role: "user", message: m, createdAt: now }];
-    setMessages(optimistic);
     setStreaming(true);
     setHasMore(false);
     const controller = new AbortController();
@@ -339,6 +352,65 @@ export function LifeOSChatWorkspace() {
       }).catch(() => {});
       scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
     }
+  };
+
+  const send = async () => {
+    const m = input.trim();
+    if (!m || streaming || pendingAction) return;
+    setInput("");
+    const now = new Date().toISOString();
+    setMessages((p) => [...p, { id: Date.now(), role: "user", message: m, createdAt: now }]);
+    // Deteksi aksi (create record) sebelum stream
+    try {
+      const det = await fetch("/api/chat/action", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: m, feature }),
+      }).then((r) => r.json());
+      if (det.action) {
+        setPendingAction({ message: m, action: det.action });
+        return;
+      }
+    } catch {
+      // gagal deteksi → lanjut stream normal
+    }
+    await streamOnly(m, now);
+  };
+
+  /** User mengizinkan aksi → eksekusi record. */
+  const confirmAction = async () => {
+    if (!pendingAction || executingAction) return;
+    setExecutingAction(true);
+    try {
+      const res = await fetch("/api/chat/action", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: pendingAction.message, feature, confirm: true, sessionId: activeId }),
+      });
+      const j = await res.json();
+      if (!res.ok || !j.result) throw new Error(j.error || "Gagal eksekusi");
+      if (j.result.ok) toast.success(j.result.message);
+      else toast.error(j.result.message);
+      if (activeId) {
+        // route sudah menyimpan pesan sistem → reload pesan asli
+        const j2 = await fetch(`/api/chat/sessions/${activeId}/messages`).then((r) => r.json());
+        if (j2.data?.length) setMessages(j2.data);
+      } else {
+        setMessages((p) => [...p, { id: Date.now(), role: "assistant", message: `${j.result.ok ? "✅" : "⚠️"} ${j.result.message}`, createdAt: new Date().toISOString() }]);
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Gagal eksekusi");
+    } finally {
+      setExecutingAction(false);
+      setPendingAction(null);
+    }
+  };
+
+  /** Batal → lanjut stream jawaban AI seperti biasa. */
+  const cancelAction = () => {
+    const m = pendingAction?.message;
+    setPendingAction(null);
+    if (m) void streamOnly(m, new Date().toISOString());
   };
 
   const startRename = (s: SessionRow) => {
@@ -722,6 +794,29 @@ export function LifeOSChatWorkspace() {
 
           {/* Input */}
           <div className="shrink-0 border-t border-border/40 bg-card/30 p-2.5">
+            {/* Kartu konfirmasi aksi AI */}
+            {pendingAction && (
+              <div className="mx-auto mb-2 max-w-3xl rounded-xl border border-primary/30 bg-primary/5 p-2.5">
+                <div className="flex items-start gap-2">
+                  <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/15">
+                    <Sparkles className="size-3.5 text-primary" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[11px] font-semibold">AI ingin membuat record</p>
+                    <p className="mt-0.5 text-[10px] leading-relaxed text-muted-foreground">{describeAction(pendingAction.action)}</p>
+                  </div>
+                  <div className="flex shrink-0 gap-1.5">
+                    <Button size="sm" variant="outline" className="h-7 text-[10px]" onClick={() => cancelAction()} disabled={executingAction}>
+                      Batal
+                    </Button>
+                    <Button size="sm" className="h-7 gap-1 text-[10px]" onClick={() => void confirmAction()} disabled={executingAction}>
+                      {executingAction ? <Loader2 className="size-3 animate-spin" /> : <Check className="size-3" />}
+                      Izinkan
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
             <div className="mx-auto flex max-w-3xl items-end gap-2">
               <div className="flex min-h-[46px] flex-1 items-end rounded-2xl border border-border/70 bg-card px-3 py-2 shadow-sm transition-all focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/15">
                 <Textarea
