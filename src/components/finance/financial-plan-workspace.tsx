@@ -115,6 +115,8 @@ export function FinancialPlanWorkspace() {
   const [children, setChildren] = React.useState<ChildDraft[]>([]);
   const [debtsList, setDebtsList] = React.useState<DebtRow[]>([]);
   const [analysis, setAnalysis] = React.useState<FinancialAnalysis | null>(null);
+  const [actualIncome, setActualIncome] = React.useState(0);
+  const [actualExpense, setActualExpense] = React.useState(0);
   const [loading, setLoading] = React.useState(true);
   const [saving, setSaving] = React.useState(false);
   const [analyzing, setAnalyzing] = React.useState(false);
@@ -194,6 +196,16 @@ export function FinancialPlanWorkspace() {
         if (!cancelled) setLoading(false);
       }
     })();
+    // Data aktual bulan berjalan dari fitur Finance
+    fetch("/api/finance/summary")
+      .then((r) => r.json())
+      .then((j) => {
+        if (!cancelled && j.data) {
+          setActualIncome(j.data.masuk ?? 0);
+          setActualExpense(j.data.keluar ?? 0);
+        }
+      })
+      .catch(() => {});
     return () => {
       cancelled = true;
     };
@@ -577,12 +589,44 @@ export function FinancialPlanWorkspace() {
 
         {/* ═══ HASIL (kanan) ═══ */}
         <div className="space-y-3">
+          {/* Alert boros — live dari Finance aktual */}
+          {actualExpense > form.monthlyExpense * 1.05 && (
+            <div className="rounded-xl border border-rose-500/30 bg-rose-500/[0.07] p-3.5 shadow-sm">
+              <p className="flex items-center gap-1.5 text-xs font-semibold text-rose-600 dark:text-rose-400">
+                <ShieldAlert className="size-3.5" /> ⚠️ Kamu boros bulan ini!
+              </p>
+              <p className="mt-1 text-[11px] leading-relaxed text-foreground/85">
+                Pengeluaran aktual <b>{fmtRp(actualExpense)}</b> sudah melebihi rencana <b>{fmtRp(form.monthlyExpense)}</b> (+
+                {fmtRp(actualExpense - form.monthlyExpense)}). Cek detail di fitur <b>Finance</b> dan kurangi pengeluaran non-esensial.
+              </p>
+              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
+                <div
+                  className="h-full bg-rose-500"
+                  style={{ width: `${Math.min(100, Math.round((actualExpense / Math.max(1, form.monthlyExpense)) * 100))}%` }}
+                />
+              </div>
+              <p className="mt-1 text-[9px] text-muted-foreground">
+                {fmtRp(actualExpense)} / {fmtRp(form.monthlyExpense)} rencana
+              </p>
+            </div>
+          )}
+
           {/* Ringkasan live */}
           <div className="rounded-xl border border-border/60 bg-card p-4 shadow-sm">
             <p className="flex items-center gap-1.5 text-xs font-semibold">
               <Wallet className="size-3.5 text-primary" /> Ringkasan rencana
             </p>
             <div className="mt-2.5 space-y-2 text-[11px]">
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Pemasukan aktual (bulan ini)</span>
+                <span className="font-semibold text-emerald-600 dark:text-emerald-400">{fmtRp(actualIncome)}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Pengeluaran aktual (bulan ini)</span>
+                <span className={cn("font-semibold", actualExpense > form.monthlyExpense ? "text-rose-600 dark:text-rose-400" : "")}>
+                  {fmtRp(actualExpense)}
+                </span>
+              </div>
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Dana darurat</span>
                 <span className={cn("font-semibold", liveResult.emergencyReached ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400")}>
@@ -649,6 +693,66 @@ export function FinancialPlanWorkspace() {
             ) : (
               <div className="space-y-3 p-4">
                 <p className="rounded-lg border border-border/50 bg-muted/20 p-2.5 text-[11px] leading-relaxed">{analysis.ringkasan}</p>
+
+                {/* Status boros (hasil AI) */}
+                {analysis.statusBoros?.boros && (
+                  <div className="rounded-lg border border-rose-500/30 bg-rose-500/[0.07] p-2.5">
+                    <p className="flex items-center gap-1 text-[10px] font-bold text-rose-600 dark:text-rose-400">
+                      <ShieldAlert className="size-3" /> Terdeteksi boros bulan ini
+                    </p>
+                    <p className="mt-0.5 text-[10px] leading-relaxed text-foreground/85">{analysis.statusBoros.pesan}</p>
+                  </div>
+                )}
+
+                {/* Alokasi % dari pemasukan */}
+                {analysis.alokasiPersen && (
+                  <div>
+                    <p className="mb-1.5 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">
+                      💹 Alokasi pemasukan yang disarankan
+                    </p>
+                    <div className="flex h-2.5 overflow-hidden rounded-full bg-muted">
+                      <div className="bg-sky-500/80" style={{ width: `${analysis.alokasiPersen.kebutuhan}%` }} />
+                      <div className="bg-primary/80" style={{ width: `${analysis.alokasiPersen.tabungan}%` }} />
+                      <div className="bg-emerald-500/80" style={{ width: `${analysis.alokasiPersen.investasi}%` }} />
+                      <div className="bg-amber-500/80" style={{ width: `${analysis.alokasiPersen.cicilan}%` }} />
+                    </div>
+                    <div className="mt-1.5 grid grid-cols-4 gap-1.5 text-center">
+                      {[
+                        { label: "Kebutuhan", v: analysis.alokasiPersen.kebutuhan, cls: "text-sky-600 dark:text-sky-400" },
+                        { label: "Tabungan", v: analysis.alokasiPersen.tabungan, cls: "text-primary" },
+                        { label: "Investasi", v: analysis.alokasiPersen.investasi, cls: "text-emerald-600 dark:text-emerald-400" },
+                        { label: "Cicilan", v: analysis.alokasiPersen.cicilan, cls: "text-amber-600 dark:text-amber-400" },
+                      ].map((x) => (
+                        <div key={x.label} className="rounded-lg bg-muted/40 p-1.5">
+                          <p className={cn("text-xs font-bold", x.cls)}>{x.v}%</p>
+                          <p className="text-[8px] text-muted-foreground">{x.label}</p>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="mt-1 text-[9px] leading-relaxed text-muted-foreground">{analysis.alokasiPersen.penjelasan}</p>
+                  </div>
+                )}
+
+                {/* Insight tokoh */}
+                {analysis.insightTokoh && analysis.insightTokoh.length > 0 && (
+                  <div>
+                    <p className="mb-1.5 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">
+                      🧠 Insight para investor legendaris
+                    </p>
+                    <div className="space-y-1.5">
+                      {analysis.insightTokoh.map((t, i) => (
+                        <div key={i} className="rounded-lg border border-border/50 bg-muted/20 p-2.5">
+                          <p className="flex items-center gap-1 text-[10px] font-bold">
+                            <span className="flex size-4 items-center justify-center rounded-full bg-primary/15 text-[8px] text-primary">{i + 1}</span>
+                            {t.tokoh}
+                          </p>
+                          <p className="mt-1 text-[10px] leading-relaxed text-primary/70 italic">&ldquo;{t.quote}&rdquo;</p>
+                          <p className="mt-1 text-[10px] leading-relaxed text-muted-foreground">{t.penerapan}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {/* Prioritas lunas */}
                 {analysis.prioritasLunas.length > 0 && (

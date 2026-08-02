@@ -14,6 +14,21 @@ export const FinancialAnalysisSchema = z.object({
     modalDividen: z.string(),
     estimasiTahunDividen: z.string(),
   }),
+  /** Rekomendasi alokasi persen dari pemasukan (aturan 50/30/20 + konteks user) */
+  alokasiPersen: z.object({
+    kebutuhan: z.number(),
+    tabungan: z.number(),
+    investasi: z.number(),
+    cicilan: z.number(),
+    penjelasan: z.string(),
+  }),
+  /** Status boros bulan berjalan (aktual vs rencana) */
+  statusBoros: z.object({
+    boros: z.boolean(),
+    pesan: z.string(),
+  }),
+  /** Insight dari prinsip tokoh (Dalio/Buffett/Munger/dll) */
+  insightTokoh: z.array(z.object({ tokoh: z.string(), quote: z.string(), penerapan: z.string() })),
   roadmap: z.array(z.string()),
   catatanAntiRiba: z.string(),
 });
@@ -50,6 +65,9 @@ export interface FinancialAiInput {
   dividendTarget: number;
   dividendYield: number;
   schoolInflation: number;
+  /** Data AKTUAL bulan berjalan dari fitur Finance */
+  actualIncome: number;
+  actualExpense: number;
   children: { name: string; age: number; schoolLevel: string; schoolCostYear: number }[];
   debts: {
     party: string;
@@ -77,17 +95,23 @@ export async function analyzeFinancial(input: FinancialAiInput): Promise<{
       buildSystemPrompt({ tone: "detail" }) +
       [
         "",
-        "Kamu adalah perencana keuangan syariah Indonesia yang tegas anti riba dan sangat detail.",
-        "Analisa kondisi keuangan user lalu berikan rekomendasi. Output JSON TANPA markdown:",
+        "Kamu adalah financial advisor syariah Indonesia yang tegas anti riba, berpengalaman, dan paham prinsip keuangan para investor legendaris.",
+        "Analisa kondisi keuangan user (rencana + ACTUAL bulan berjalan) lalu berikan rekomendasi. Output JSON TANPA markdown:",
         '{"ringkasan":"1-2 kalimat kondisi keuangan user",',
         '"prioritasLunas":[{"nama":"nama cicilan","alasan":"kenapa harus dilunasi urutan ini"}],',
         '"alokasi":{"danaDarurat":"...","investasiBulanan":"...","modalDividen":"...","estimasiTahunDividen":"..."},',
-        '"roadmap":["langkah 1","langkah 2",...],"catatanAntiRiba":"..."}',
+        '"alokasiPersen":{"kebutuhan":50,"tabungan":20,"investasi":20,"cicilan":10,"penjelasan":"..."},',
+        '"statusBoros":{"boros":true/false,"pesan":"..."},',
+        '"insightTokoh":[{"tokoh":"Ray Dalio","quote":"...","penerapan":"..."}],',
+        '"roadmap":["langkah 1",...],"catatanAntiRiba":"..."}',
         "",
         "Aturan analisa:",
-        "- Urutkan prioritas lunas: dahulukan cicilan dengan sisa kecil + tenor pendek (efek psikologis) DAN cicilan dengan bunga tinggi (beban terbesar). Tanpa bunga → urutkan dari sisa terkecil.",
+        "- alokasiPersen: persentase dari PEMASUKAN (bulat, total 100). Acuan: aturan 50/30/20 (kebutuhan/tabungan/keinginan) versi syariah — kebutuhan hidup, tabungan darurat, investasi, cicilan. Sesuaikan dengan beban user (cicilan tinggi → kurangi kebutuhan/keinginan).",
+        "- statusBoros: bandingkan pengeluaran ACTUAL bulan berjalan vs pengeluaran rencana bulanan user. Boros jika actual > rencana (selisih >5%). Beri pesan tegas tapi membangun dengan angka.",
+        "- insightTokoh: 2-3 prinsip dari Ray Dalio (hidup di bawah kemampuan / All Weather), Warren Buffett (jangan kehilangan uang, beli aset produktif), Charlie Munger (disiplin & inversi) — masing-masing dengan quote terkenal (bahasa Inggris singkat) + penerapan konkret untuk kondisi user.",
+        "- Urutkan prioritas lunas: dahulukan cicilan sisa kecil + tenor pendek (efek psikologis) DAN cicilan bunga tinggi (beban terbesar). Tanpa bunga → dari sisa terkecil.",
         "- Alokasi: dana darurat (6x pengeluaran) → cicilan → investasi; modalDividen = targetDividen / (yield/100).",
-        "- estimasiTahunDividen: perkirakan tahun mencapai modal dividen dari investasi bulanan (tanpa riba, return saham syariah ~10-12%).",
+        "- estimasiTahunDividen: perkirakan tahun mencapai modal dividen dari investasi bulanan (return saham syariah ~10-12%).",
         "- Roadmap 4-6 langkah konkret berurutan (darurat → lunas → investasi → dividen).",
         "- Semua angka dalam Bahasa Indonesia, format rupiah dengan titik.",
         "- Jangan pernah menyarankan riba/bunga.",
@@ -114,6 +138,7 @@ export async function analyzeFinancial(input: FinancialAiInput): Promise<{
       `Alokasi investasi: saham ${input.stockPct}% (return ${input.stockReturn}%), obligasi ${input.bondPct}% (${input.bondReturn}%), kas ${input.cashPct}% (${input.cashReturn}%)`,
       `Inflasi ${input.inflation}%, target FIRE ${input.fireMultiple}x pengeluaran tahunan`,
       `Target dividen: Rp${input.dividendTarget.toLocaleString("id-ID")}/tahun dengan yield ${input.dividendYield}%`,
+      `AKTUAL bulan berjalan (dari fitur Finance): pemasukan masuk Rp${input.actualIncome.toLocaleString("id-ID")}, pengeluaran keluar Rp${input.actualExpense.toLocaleString("id-ID")}`,
       `Anak:\n${childrenSummary || "- tidak ada data anak"}`,
       `Cicilan/hutang:\n${debtsSummary || "- tidak ada cicilan"}`,
     ].join("\n");

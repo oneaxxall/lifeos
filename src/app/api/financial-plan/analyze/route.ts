@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { eq, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { financialPlans, financialChildren, debts } from "@/lib/db/schema";
+import { monthlySummary } from "@/lib/db/finance-repo";
 import { analyzeFinancial, type FinancialAiInput } from "@/lib/ai/financial-ai";
 
 const NUM = (v: unknown, def: number) => {
@@ -27,6 +28,9 @@ export async function POST(req: NextRequest) {
       .where(sql`${debts.type} = 'hutang' AND ${debts.paymentMode} = 'cicilan'`)
       .all();
 
+    // Data AKTUAL bulan berjalan dari fitur Finance
+    const summary = monthlySummary(new Date().toISOString().slice(0, 7));
+
     const input: FinancialAiInput = {
       age: body.age !== undefined ? NUM(body.age, 0) : NUM(row.age, 0),
       monthlyIncome: NUM(row.monthlyIncome, 0),
@@ -45,6 +49,8 @@ export async function POST(req: NextRequest) {
       dividendTarget: body.dividendTarget !== undefined ? NUM(body.dividendTarget, 0) : NUM(row.dividendTarget, 0),
       dividendYield: NUM(row.dividendYield, 5),
       schoolInflation: NUM(row.schoolInflation, 10),
+      actualIncome: summary.masuk,
+      actualExpense: summary.keluar,
       children: children.map((c) => ({
         name: c.name,
         age: c.age,
