@@ -501,7 +501,7 @@ export function QuotesWorkspace() {
                       &ldquo;{q.content}&rdquo;
                     </p>
                     <p className="mt-2 flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                      <span className="font-medium text-foreground/80">— {q.author || "AI LifeOS"}</span>
+                      <span className="font-medium text-foreground/80">— {q.author || "LifeOS"}</span>
                       {q.topic && (
                         <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-[9px] text-primary capitalize">
                           {q.topic}
@@ -563,7 +563,7 @@ export function QuotesWorkspace() {
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Pengarang</label>
-                <Input value={editAuthor} onChange={(e) => setEditAuthor(e.target.value)} className="h-9 text-sm" placeholder="AI LifeOS" />
+                <Input value={editAuthor} onChange={(e) => setEditAuthor(e.target.value)} className="h-9 text-sm" placeholder="LifeOS" />
               </div>
               <div>
                 <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Topik</label>

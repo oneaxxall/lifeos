@@ -138,7 +138,7 @@ export function PosterDialog({
       y += fontSize * 0.4;
       ctx.font = `600 26px ${font}`;
       ctx.fillStyle = "#5EEAD4";
-      ctx.fillText(`— ${quote.author || "AI LifeOS"}`, padX, y);
+      ctx.fillText(`— ${quote.author || "LifeOS"}`, padX, y);
 
       // Footer
       ctx.font = `500 17px ${font}`;

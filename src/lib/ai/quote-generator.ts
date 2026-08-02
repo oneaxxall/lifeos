@@ -164,7 +164,7 @@ function saveQuotes(date: string, quotes: Quote[], topic: string) {
       .values({
         date,
         content: q.content,
-        author: q.author || "AI LifeOS",
+        author: q.author && q.author !== "-" ? q.author : "LifeOS",
         topic,
         position: startPos + i,
       })

@@ -46,7 +46,8 @@ export function QuoteSlider() {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch("/api/quotes");
+        const today = new Date().toISOString().slice(0, 10);
+        const res = await fetch(`/api/quotes?date=${today}`);
         const json = await res.json();
         if (cancelled) return;
         setQuotes(json.data ?? []);
@@ -98,7 +99,8 @@ export function QuoteSlider() {
       const json = await res.json();
       if (!res.ok || !json.ok) throw new Error(json.error || "Gagal");
       // Quote baru BERTAMBAH — reload semua quote hari ini dari DB (lama + baru)
-      const allRes = await fetch("/api/quotes");
+      const today = new Date().toISOString().slice(0, 10);
+      const allRes = await fetch(`/api/quotes?date=${today}`);
       const allJson = await allRes.json();
       setQuotes(allJson.data ?? json.data ?? []);
       setIndex(0);
@@ -277,7 +279,7 @@ export function QuoteSlider() {
                   <div className="mt-2 flex items-center gap-2">
                     <span className="inline-block h-px w-4 bg-amber-500/50" />
                     <p className="text-[11px] font-medium text-amber-600 dark:text-amber-400">
-                      {q.author || "AI LifeOS"}
+                      {q.author || "LifeOS"}
                     </p>
                     {i === current && (
                       <span className="ml-auto rounded-full bg-primary/15 px-2 py-0.5 text-[9px] font-semibold text-primary">

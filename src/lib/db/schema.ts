@@ -641,7 +641,7 @@ export const dailyQuotes = sqliteTable("daily_quotes", {
   date: text("date").notNull(),
   /** Isi quote */
   content: text("content").notNull(),
-  /** Pengarang/sumber (default "AI LifeOS") */
+  /** Pengarang/sumber (default "LifeOS") */
   author: text("author").default(""),
   /** Topik (motivasi, disiplin, keluarga, dll.) */
   topic: text("topic").default(""),
