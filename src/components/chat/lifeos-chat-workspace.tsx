@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/dialog";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { CHAT_FEATURES, type ChatFeatureKey } from "@/lib/chat-features";
@@ -134,9 +135,32 @@ const mdComponents = {
       {children}
     </a>
   ),
-  code: ({ children }: { children?: React.ReactNode }) => (
-    <code className="rounded bg-muted-foreground/10 px-1 py-0.5 font-mono text-[10px]">{children}</code>
+  // Code block (fenced ```) — container gelap + scroll horizontal
+  pre: ({ children }: { children?: React.ReactNode }) => (
+    <pre className="my-1.5 overflow-x-auto rounded-lg border border-border/50 bg-muted/60 p-2.5 text-[10px] leading-relaxed text-foreground/90">
+      {children}
+    </pre>
   ),
+  // Inline code vs fenced code (dengan language class)
+  code: ({ className, children }: { className?: string; children?: React.ReactNode }) =>
+    className ? (
+      <code className={cn("block text-[10px] leading-relaxed", className)}>{children}</code>
+    ) : (
+      <code className="rounded bg-muted-foreground/10 px-1 py-0.5 font-mono text-[10px]">{children}</code>
+    ),
+  // Tabel markdown — border & scroll
+  table: ({ children }: { children?: React.ReactNode }) => (
+    <div className="my-1.5 overflow-x-auto rounded-lg border border-border/50">
+      <table className="w-full border-collapse text-[10px]">{children}</table>
+    </div>
+  ),
+  thead: ({ children }: { children?: React.ReactNode }) => <thead className="bg-muted/50">{children}</thead>,
+  tbody: ({ children }: { children?: React.ReactNode }) => <tbody>{children}</tbody>,
+  tr: ({ children }: { children?: React.ReactNode }) => <tr className="border-b border-border/40 last:border-0">{children}</tr>,
+  th: ({ children }: { children?: React.ReactNode }) => (
+    <th className="border-b border-border/40 px-2 py-1 text-left font-bold">{children}</th>
+  ),
+  td: ({ children }: { children?: React.ReactNode }) => <td className="px-2 py-1 align-top">{children}</td>,
 };
 
 export function LifeOSChatWorkspace() {
@@ -766,7 +790,7 @@ export function LifeOSChatWorkspace() {
                               {msg.role === "assistant" ? (
                                 msg.message ? (
                                   <div className="markdown-chat">
-                                    <ReactMarkdown components={mdComponents}>{msg.message}</ReactMarkdown>
+                                    <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents}>{msg.message}</ReactMarkdown>
                                   </div>
                                 ) : (
                                   <span className="flex items-center gap-1.5 text-muted-foreground">
