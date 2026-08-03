@@ -46,7 +46,8 @@ export function QuoteSlider() {
     let cancelled = false;
     (async () => {
       try {
-        const today = new Date().toISOString().slice(0, 10);
+        const d = new Date();
+        const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
         const res = await fetch(`/api/quotes?date=${today}`);
         const json = await res.json();
         if (cancelled) return;
@@ -99,7 +100,8 @@ export function QuoteSlider() {
       const json = await res.json();
       if (!res.ok || !json.ok) throw new Error(json.error || "Gagal");
       // Quote baru BERTAMBAH — reload semua quote hari ini dari DB (lama + baru)
-      const today = new Date().toISOString().slice(0, 10);
+      const d = new Date();
+        const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
       const allRes = await fetch(`/api/quotes?date=${today}`);
       const allJson = await allRes.json();
       setQuotes(allJson.data ?? json.data ?? []);

@@ -1,4 +1,5 @@
 import {
+  Activity,
   ArrowLeftRight,
   BookHeart,
   Brain,
@@ -106,6 +107,7 @@ export const navGroups: NavGroup[] = [
   {
     label: "Sistem",
     items: [
+      { title: "System Health", href: "/system-health", icon: Activity, description: "CPU, RAM, disk & Docker" },
       { title: "Backup", href: "/backup", icon: DatabaseBackup, description: "Backup & restore data" },
     ],
   },

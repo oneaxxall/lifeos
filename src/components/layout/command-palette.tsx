@@ -109,9 +109,10 @@ export function CommandPaletteTrigger() {
         "Cek quote motivasi…",
       ];
       try {
-        const today = new Date().toISOString().slice(0, 10);
+        const d = new Date();
+        const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
         const j = await fetch(`/api/quotes?date=${today}`).then((r) => r.json());
-        const q = j.data?.[0]?.quote;
+        const q = j.data?.[0]?.content;
         if (q) {
           const short = q.length > 42 ? `${q.slice(0, 42)}…` : q;
           base.splice(1, 0, `"${short}"`);
