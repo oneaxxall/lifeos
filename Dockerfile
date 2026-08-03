@@ -18,8 +18,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY package.json package-lock.json* ./
 RUN npm ci
 
-# Copy source & build
-COPY . .
+# Copy source & build — COPY selektif agar cache layer npm ci TIDAK rusak saat hanya src berubah
+COPY src ./src
+COPY public ./public
+COPY drizzle ./drizzle
+COPY scripts ./scripts
+COPY drizzle.config.ts next.config.ts tsconfig.json ./
+COPY .env.example ./
 RUN npm run build
 
 # ── Stage 2: runtime ──

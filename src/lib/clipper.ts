@@ -44,12 +44,15 @@ export function clipperCookieArgs(): string[] {
   return [];
 }
 
-/** Ambil metadata video via yt-dlp --dump-single-json. Retry dengan player_client alternatif (IP datacenter sering dibatasi). */
-export function fetchVideoMeta(url: string): Promise<{ title: string; channel: string; duration: number; thumbnail: string; id: string }> {
+/** Client youtube yang berhasil untuk tiap job (agar download pakai client yang sama). */
+export const jobClientArgs = new Map<number, string[]>();
+
+/** Ambil metadata video via yt-dlp --dump-single-json. Retry chain: default+cookies → android → tv → web_safari. */
+export function fetchVideoMeta(url: string): Promise<{ meta: { title: string; channel: string; duration: number; thumbnail: string; id: string }; clientArgs: string[] }> {
   return new Promise((resolve, reject) => {
-    const tryExtract = (extraArgs: string[]): Promise<{ ok: boolean; data?: string; err?: string }> =>
+    const tryExtract = (args: string[]): Promise<{ ok: boolean; data?: string; err?: string }> =>
       new Promise((res) => {
-        const out = spawn("yt-dlp", ["--dump-single-json", "--no-playlist", "-4", ...extraArgs, ...clipperCookieArgs(), url]);
+        const out = spawn("yt-dlp", ["--dump-single-json", "--no-playlist", "-4", ...args, url]);
         let buf = "";
         let errBuf = "";
         out.stdout.on("data", (d: Buffer) => (buf += String(d)));
@@ -64,15 +67,24 @@ export function fetchVideoMeta(url: string): Promise<{ title: string; channel: s
       });
 
     void (async () => {
-      // Percobaan 1: client default
-      let r = await tryExtract([]);
-      // Percobaan 2: multi client (android/tv sering lolos pembatasan IP datacenter)
-      if (!r.ok) {
-        r = await tryExtract(["--extractor-args", "youtube:player_client=default,android,tv"]);
-      }
-      // Percobaan 3: client android saja
+      const cookies = clipperCookieArgs();
+      // Percobaan 1: client default + cookies (bila ada)
+      let r = await tryExtract([...cookies, "--extractor-args", "youtube:player_client=default"]);
+      let clientArgs: string[] = ["--extractor-args", "youtube:player_client=default"];
+      // Percobaan 2: android TANPA cookies (android tidak support cookies)
       if (!r.ok) {
         r = await tryExtract(["--extractor-args", "youtube:player_client=android"]);
+        clientArgs = ["--extractor-args", "youtube:player_client=android"];
+      }
+      // Percobaan 3: tv TANPA cookies
+      if (!r.ok) {
+        r = await tryExtract(["--extractor-args", "youtube:player_client=tv"]);
+        clientArgs = ["--extractor-args", "youtube:player_client=tv"];
+      }
+      // Percobaan 4: web_safari TANPA cookies
+      if (!r.ok) {
+        r = await tryExtract(["--extractor-args", "youtube:player_client=web_safari"]);
+        clientArgs = ["--extractor-args", "youtube:player_client=web_safari"];
       }
       if (!r.ok || !r.data) {
         return reject(new Error(`Gagal mengambil metadata (video mungkin tidak tersedia)${r?.err ? ` — ${r.err.slice(0, 160)}` : ""}`));
@@ -80,11 +92,14 @@ export function fetchVideoMeta(url: string): Promise<{ title: string; channel: s
       try {
         const j = JSON.parse(r.data);
         resolve({
-          title: String(j.title || "Untitled").replace(/[\\/:*?"<>|]/g, "-").slice(0, 120),
-          channel: String(j.channel || ""),
-          duration: Number(j.duration || 0),
-          thumbnail: String(j.thumbnail || ""),
-          id: String(j.id || ""),
+          meta: {
+            title: String(j.title || "Untitled").replace(/[\\/:*?"<>|]/g, "-").slice(0, 120),
+            channel: String(j.channel || ""),
+            duration: Number(j.duration || 0),
+            thumbnail: String(j.thumbnail || ""),
+            id: String(j.id || ""),
+          },
+          clientArgs,
         });
       } catch {
         reject(new Error("Gagal parse metadata video"));
@@ -98,7 +113,9 @@ export async function runDownloadJob(jobId: number, url: string): Promise<void> 
   let meta: { title: string; channel: string; duration: number; thumbnail: string; id: string };
   try {
     updateJob(jobId, { status: "running", progress: 1, message: "Mengambil metadata…" });
-    meta = await fetchVideoMeta(url);
+    const res = await fetchVideoMeta(url);
+    meta = res.meta;
+    jobClientArgs.set(jobId, res.clientArgs);
     updateJob(jobId, { message: `Mengunduh: ${meta.title}` });
   } catch (e) {
     updateJob(jobId, { status: "failed", message: e instanceof Error ? e.message : "Gagal" });
@@ -107,12 +124,15 @@ export async function runDownloadJob(jobId: number, url: string): Promise<void> 
 
   const safeTitle = meta.title.replace(/[\\/:*?"<>|]/g, "-").slice(0, 100);
   const output = path.join(VIDEO_DIR, `${safeTitle} [${meta.id}].%(ext)s`);
+  // Pakai client yang sama dengan metadata (cookies hanya utk client default/web)
+  const clientArgs = jobClientArgs.get(jobId) ?? [];
+  const useCookies = clientArgs.includes("default") ? clipperCookieArgs() : [];
   const child = spawn("yt-dlp", [
     "--newline",
     "--no-playlist",
     "-4",
-    ...clipperCookieArgs(),
-    "--extractor-args", "youtube:player_client=default,android,tv",
+    ...useCookies,
+    ...clientArgs,
     "-f", "bv*+ba/b",
     "--merge-output-format", "mp4",
     "--progress-template", "download:%(progress.downloaded_bytes)s/%(progress.total_bytes)s/%(progress.speed)s/%(progress.eta)s",

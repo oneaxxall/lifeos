@@ -1,26 +1,16 @@
-# Dependencies
+# Dependencies & hasil build — jangan masuk image (cepatkan build + kecilkan image)
 node_modules
 .next
-
-# Data lokal — TIDAK pernah masuk image
 data
-*.db
-
-# Env & secrets — TIDAK pernah masuk image
-.env*
-!.env.example
-
-# Folder lokal
-docs
-planning
-todos
-SOUL.md
-
-# Git & tooling
 .git
 .gitignore
 *.md
-
-# Logs
-npm-debug.log*
-*.log
+planning
+docs
+todos
+.env
+.env.local
+.env.*.local
+Dockerfile
+.dockerignore
+README.md
