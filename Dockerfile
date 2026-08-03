@@ -66,12 +66,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 RUN python3 -m venv /opt/lifeos-tools/venv-clipper \
     && /opt/lifeos-tools/venv-clipper/bin/pip install --no-cache-dir \
-       faster-whisper edge-tts yt-dlp
+       faster-whisper edge-tts yt-dlp yt-dlp-ejs
 
 ENV CLIPPER_PYTHON=/opt/lifeos-tools/venv-clipper/bin/python
 ENV PATH="/opt/lifeos-tools/venv-clipper/bin:${PATH}"
 # Folder data (video & clip) — volume persisten dari docker-compose
 RUN mkdir -p /app/data/videos /app/data/clips && chown -R nextjs:nodejs /app/data
+# Home dir user nextjs — WAJIB ada, yt-dlp EJS (JS runtime) butuh home writable untuk deteksi node
+RUN mkdir -p /home/nextjs && chown nextjs:nodejs /home/nextjs && chmod 700 /home/nextjs
 
 USER nextjs
 

@@ -52,7 +52,7 @@ export function fetchVideoMeta(url: string): Promise<{ meta: { title: string; ch
   return new Promise((resolve, reject) => {
     const tryExtract = (args: string[]): Promise<{ ok: boolean; data?: string; err?: string }> =>
       new Promise((res) => {
-        const out = spawn("yt-dlp", ["--dump-single-json", "--no-playlist", "-4", ...args, url]);
+        const out = spawn("yt-dlp", ["--dump-single-json", "--no-playlist", "-4", "--js-runtimes", "node", ...args, url]);
         let buf = "";
         let errBuf = "";
         out.stdout.on("data", (d: Buffer) => (buf += String(d)));
@@ -146,6 +146,8 @@ export async function runDownloadJob(jobId: number, url: string): Promise<void> 
     "--newline",
     "--no-playlist",
     "-4",
+    "--js-runtimes",
+    "node",
     ...useCookies,
     ...clientArgs,
     "-f", "bv*+ba/b",
