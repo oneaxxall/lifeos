@@ -90,9 +90,50 @@ export function CommandPalette({ children }: { children: React.ReactNode }) {
   );
 }
 
-/** Tombol pencarian — dipakai di header */
+/** Tombol pencarian — dipakai di header (placeholder berganti-ganti: quote hari ini + prompt). */
 export function CommandPaletteTrigger() {
   const { setOpen } = useCommandPalette();
+  const [textIdx, setTextIdx] = React.useState(0);
+  const [phrases, setPhrases] = React.useState<string[]>([]);
+
+  // Muat placeholder: base prompts + quote hari ini (disisipkan di urutan ke-2)
+  React.useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const base = [
+        "Cari fitur atau ketik perintah…",
+        "Buka Todo & jadwal…",
+        "Catat pengeluaran…",
+        "Lihat portofolio saham…",
+        "Curhat ke AI…",
+        "Cek quote motivasi…",
+      ];
+      try {
+        const today = new Date().toISOString().slice(0, 10);
+        const j = await fetch(`/api/quotes?date=${today}`).then((r) => r.json());
+        const q = j.data?.[0]?.quote;
+        if (q) {
+          const short = q.length > 42 ? `${q.slice(0, 42)}…` : q;
+          base.splice(1, 0, `"${short}"`);
+        }
+      } catch {
+        // tanpa quote
+      }
+      if (!cancelled) setPhrases(base);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Rotasi setiap 3,5 detik
+  React.useEffect(() => {
+    if (phrases.length < 2) return;
+    const t = window.setInterval(() => setTextIdx((i) => (i + 1) % phrases.length), 3500);
+    return () => window.clearInterval(t);
+  }, [phrases]);
+
+  const phrase = phrases[textIdx] ?? "Cari fitur atau ketik perintah…";
 
   return (
     <button
@@ -102,7 +143,9 @@ export function CommandPaletteTrigger() {
       aria-label="Cari (⌘K)"
     >
       <Search className="size-4 shrink-0" />
-      <span className="flex-1 text-left">Cari di LifeOS…</span>
+      <span key={textIdx} className="flex-1 truncate text-left animate-in fade-in [animation-duration:450ms]">
+        {phrase}
+      </span>
       <kbd className="hidden items-center gap-0.5 rounded border border-border bg-muted px-1.5 py-0.5 text-[10px] font-medium sm:flex">
         ⌘K
       </kbd>
