@@ -24,6 +24,8 @@ COPY public ./public
 COPY drizzle ./drizzle
 COPY scripts ./scripts
 COPY drizzle.config.ts next.config.ts tsconfig.json ./
+# Config CSS/Tailwind WAJIB (tanpa postcss.config.mjs → @tailwindcss/postcss hilang → tw-animate-css tidak ditemukan)
+COPY postcss.config.mjs eslint.config.mjs next-env.d.ts components.json ./
 COPY .env.example ./
 RUN npm run build
 
