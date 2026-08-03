@@ -113,6 +113,13 @@ export const clipperPresets = sqliteTable("clipper_presets", {
     .default(sql`(datetime('now'))`),
 });
 
+/** Settingan clipper (key-value): cookies_path dll. */
+export const clipperSettings = sqliteTable("clipper_settings", {
+  key: text("key").primaryKey(),
+  value: text("value").notNull().default(""),
+  updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
+});
+
 export const clipperClips = sqliteTable("clipper_clips", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   videoId: integer("video_id").notNull(),

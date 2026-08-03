@@ -25,6 +25,9 @@ import {
   Wand2,
   XCircle,
   ChevronsUpDown,
+  Lock,
+  Save,
+  Upload,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -807,6 +810,10 @@ export function ClipperWorkspace() {
   const [jobLimit, setJobLimit] = React.useState(15);
   const [cleanJobsOpen, setCleanJobsOpen] = React.useState(false);
   const [cleaningJobs, setCleaningJobs] = React.useState(false);
+  const [cookiesPath, setCookiesPath] = React.useState("");
+  const [cookiesSaved, setCookiesSaved] = React.useState(false);
+  const [cookiesUploading, setCookiesUploading] = React.useState(false);
+  const fileRef = React.useRef<HTMLInputElement>(null);
   const [viralOpen, setViralOpen] = React.useState(true);
   const [clipsOpen, setClipsOpen] = React.useState(true);
   const [editorOpen, setEditorOpen] = React.useState(false);
@@ -857,15 +864,73 @@ export function ClipperWorkspace() {
     }
   }, []);
 
+  const loadSettings = React.useCallback(async () => {
+    try {
+      const j = await fetch("/api/clipper/settings").then((r) => r.json());
+      setCookiesPath(j.data?.cookies_path ?? "");
+    } catch {
+      // abaikan
+    }
+  }, []);
+
+  const saveCookies = async () => {
+    try {
+      const res = await fetch("/api/clipper/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cookiesPath }),
+      });
+      if (!res.ok) throw new Error();
+      setCookiesSaved(true);
+      setTimeout(() => setCookiesSaved(false), 2500);
+      toast.success("Pengaturan disimpan");
+    } catch {
+      toast.error("Gagal menyimpan pengaturan");
+    }
+  };
+
+  const uploadCookies = async (file: File) => {
+    setCookiesUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/clipper/settings/upload", { method: "POST", body: fd });
+      const j = await res.json();
+      if (!res.ok) throw new Error();
+      setCookiesPath(j.path ?? "");
+      setCookiesSaved(true);
+      setTimeout(() => setCookiesSaved(false), 2500);
+      toast.success(`Cookie tersimpan (${(j.size / 1024).toFixed(1)} KB)`);
+    } catch {
+      toast.error("Gagal upload cookie");
+    } finally {
+      setCookiesUploading(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  };
+
+  const removeCookies = async () => {
+    try {
+      const res = await fetch("/api/clipper/settings/upload", { method: "DELETE" });
+      if (!res.ok) throw new Error();
+      setCookiesPath("");
+      toast.success("Cookie dihapus");
+    } catch {
+      toast.error("Gagal menghapus cookie");
+    }
+  };
+
   React.useEffect(() => {
     const tick = () => {
       void loadAll();
       void loadClips();
     };
     const first = window.setTimeout(tick, 0);
+    const st = window.setTimeout(() => void loadSettings(), 100);
     const t = window.setInterval(tick, 2500);
     return () => {
       window.clearTimeout(first);
+      window.clearTimeout(st);
       window.clearInterval(t);
     };
   }, [loadAll, loadClips]);
@@ -1093,7 +1158,7 @@ export function ClipperWorkspace() {
           <h1 className="text-2xl font-semibold">Video Clipper</h1>
           <p className="text-sm text-muted-foreground">Unduh YouTube → transkrip → analisa viral → clip siap upload.</p>
         </div>
-        <Button variant="outline" size="icon" onClick={() => { void loadAll(); void loadClips(); }} title="Segarkan" aria-label="Segarkan">
+        <Button variant="outline" size="icon" onClick={() => { void loadAll(); void loadClips(); void loadSettings(); }} title="Segarkan" aria-label="Segarkan">
           <RefreshCcw className="size-4" />
         </Button>
       </div>
@@ -1123,6 +1188,43 @@ export function ClipperWorkspace() {
 
       {tab === "download" && (
         <div className="space-y-4">
+          {/* Autentikasi YouTube (cookies) — untuk server/VPS yang diblokir YouTube */}
+          <div className="rounded-xl border bg-card p-4 shadow-sm">
+            <p className="mb-2 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+              <Lock className="size-3.5" /> Autentikasi YouTube (cookies)
+            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              <input ref={fileRef} type="file" accept=".txt,.cookies" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) void uploadCookies(f); }} />
+              <Button variant="outline" size="sm" className="h-9 gap-1.5 text-[10px]" onClick={() => fileRef.current?.click()} disabled={cookiesUploading}>
+                {cookiesUploading ? <Loader2 className="size-3 animate-spin" /> : <Upload className="size-3" />} {cookiesUploading ? "Mengunggah…" : "Upload file cookie"}
+              </Button>
+              {cookiesPath && (
+                <>
+                  <span className="inline-flex h-9 items-center gap-1.5 rounded-md border bg-emerald-500/10 px-3 font-mono text-[10px] text-emerald-600 dark:text-emerald-400">
+                    <Check className="size-3" /> cookies.txt aktif
+                  </span>
+                  <Button variant="ghost" size="sm" className="h-9 text-[10px] text-destructive" onClick={() => void removeCookies()}>
+                    <Trash2 className="size-3" /> Hapus
+                  </Button>
+                </>
+              )}
+            </div>
+            <p className="mt-1.5 text-[9px] text-muted-foreground">
+              Diperlukan bila YouTube meminta autentikasi di server. Export cookie browser sebagai file Netscape (format <span className="font-mono">cookies.txt</span>) lalu upload — atau isi path manual di bawah:
+            </p>
+            <div className="mt-2 flex gap-2">
+              <Input
+                value={cookiesPath}
+                onChange={(e) => setCookiesPath(e.target.value)}
+                placeholder="/app/data/cookies.txt (path file cookie Netscape)"
+                className="h-9 font-mono text-[11px]"
+              />
+              <Button variant="outline" size="sm" className="h-9 shrink-0 gap-1 text-[10px]" onClick={() => void saveCookies()}>
+                {cookiesSaved ? <Check className="size-3" /> : <Save className="size-3" />} {cookiesSaved ? "Tersimpan" : "Simpan"}
+              </Button>
+            </div>
+          </div>
+
           <div className="rounded-xl border bg-card p-4 shadow-sm">
             <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">URL YouTube</label>
             <div className="flex gap-2">
@@ -1364,7 +1466,9 @@ export function ClipperWorkspace() {
               <div className="rounded-xl border bg-card p-4 shadow-sm">
                 <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">1 · Pilih video & transkrip</label>
                 <div className="flex gap-2">
-                  <VideoSelect videos={videos} value={selVideoId} onChange={(id) => { setSelVideoId(id); setAnaStep(1); }} />
+                  <div className="min-w-0 flex-1">
+                    <VideoSelect videos={videos} value={selVideoId} onChange={(id) => { setSelVideoId(id); setAnaStep(1); }} />
+                  </div>
                   {!hasTranscript && (
                     <Button className="h-9 shrink-0 gap-1.5" onClick={() => void runVideoAction("transcribe")} disabled={selVideoId === null || busyAction !== null}>
                       {busyAction === "transcribe" ? <Loader2 className="size-3.5 animate-spin" /> : <Sparkles className="size-3.5" />} Transkrip Sekarang

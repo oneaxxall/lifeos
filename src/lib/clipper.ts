@@ -3,7 +3,7 @@ import fs from "fs";
 import path from "path";
 import { eq, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { clipperJobs, clipperVideos, clipperTranscripts, clipperAnalyses, clipperClips } from "@/lib/db/schema";
+import { clipperJobs, clipperVideos, clipperTranscripts, clipperAnalyses, clipperClips, clipperSettings } from "@/lib/db/schema";
 import { generateText } from "ai";
 import { getChatModel } from "@/lib/ai/provider";
 import sharp from "sharp";
@@ -27,12 +27,29 @@ function updateJob(id: number, sets: Partial<typeof clipperJobs.$inferInsert>) {
   db.update(clipperJobs).set({ ...sets, updatedAt: sql`(datetime('now'))` }).where(eq(clipperJobs.id, id)).run();
 }
 
+/** Baca settingan clipper (key-value). */
+export function getClipperSetting(key: string): string {
+  try {
+    const row = db.select().from(clipperSettings).where(eq(clipperSettings.key, key)).get();
+    return row?.value ?? "";
+  } catch {
+    return "";
+  }
+}
+
+/** Args --cookies bila file cookie tersedia (VPS: YouTube minta autentikasi). */
+export function clipperCookieArgs(): string[] {
+  const p = getClipperSetting("cookies_path").trim();
+  if (p && fs.existsSync(p)) return ["--cookies", p];
+  return [];
+}
+
 /** Ambil metadata video via yt-dlp --dump-single-json. Retry dengan player_client alternatif (IP datacenter sering dibatasi). */
 export function fetchVideoMeta(url: string): Promise<{ title: string; channel: string; duration: number; thumbnail: string; id: string }> {
   return new Promise((resolve, reject) => {
     const tryExtract = (extraArgs: string[]): Promise<{ ok: boolean; data?: string; err?: string }> =>
       new Promise((res) => {
-        const out = spawn("yt-dlp", ["--dump-single-json", "--no-playlist", "-4", ...extraArgs, url]);
+        const out = spawn("yt-dlp", ["--dump-single-json", "--no-playlist", "-4", ...extraArgs, ...clipperCookieArgs(), url]);
         let buf = "";
         let errBuf = "";
         out.stdout.on("data", (d: Buffer) => (buf += String(d)));
@@ -94,6 +111,7 @@ export async function runDownloadJob(jobId: number, url: string): Promise<void> 
     "--newline",
     "--no-playlist",
     "-4",
+    ...clipperCookieArgs(),
     "--extractor-args", "youtube:player_client=default,android,tv",
     "-f", "bv*+ba/b",
     "--merge-output-format", "mp4",
