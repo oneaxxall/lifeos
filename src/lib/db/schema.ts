@@ -906,6 +906,8 @@ export const stockPortfolio = sqliteTable("stock_portfolio", {
   code: text("code").notNull(),
   /** Jumlah lot dimiliki */
   lot: integer("lot").notNull().default(0),
+  /** Lot yang bisa ditransaksikan (0 = sama dengan lot) */
+  availableLot: integer("available_lot").notNull().default(0),
   /** Harga beli rata-rata per lembar */
   buyPrice: integer("buy_price").notNull().default(0),
   /** Harga pasar sekarang (diisi manual user, opsional) */

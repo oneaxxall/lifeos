@@ -1,0 +1,1 @@
+ALTER TABLE `stock_portfolio` ADD `available_lot` integer DEFAULT 0 NOT NULL;

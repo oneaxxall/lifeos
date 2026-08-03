@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useRouter } from "next/navigation";
 import {
   Briefcase,
   Loader2,
@@ -22,6 +23,7 @@ export interface Position {
   id: number;
   code: string;
   lot: number;
+  availableLot: number;
   shares: number;
   buyPrice: number;
   marketPrice: number;
@@ -47,6 +49,7 @@ function fmtNum(n: number): string {
 
 /** Section Portofolio — posisi saham dimiliki + nilai pasar + P/L. */
 export function StockPortfolio() {
+  const router = useRouter();
   const [positions, setPositions] = React.useState<Position[]>([]);
   const [summary, setSummary] = React.useState<Summary | null>(null);
   const [loading, setLoading] = React.useState(true);
@@ -57,6 +60,7 @@ export function StockPortfolio() {
   // Form tambah
   const [code, setCode] = React.useState("");
   const [lot, setLot] = React.useState(1);
+  const [availableLot, setAvailableLot] = React.useState(0);
   const [buyPrice, setBuyPrice] = React.useState(0);
   const [buyDate, setBuyDate] = React.useState(() => new Date().toISOString().slice(0, 10));
   const [saving, setSaving] = React.useState(false);
@@ -94,13 +98,14 @@ export function StockPortfolio() {
       const res = await fetch("/api/stocks/portfolio", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code: c, lot, buyPrice, buyDate }),
+        body: JSON.stringify({ code: c, lot, availableLot, buyPrice, buyDate }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Gagal");
       toast.success(`Posisi ${c} ditambahkan 📊`);
       setCode("");
       setLot(1);
+      setAvailableLot(0);
       setBuyPrice(0);
       setRefreshKey((k) => k + 1);
     } catch (err) {
@@ -158,7 +163,7 @@ export function StockPortfolio() {
           </span>
         </button>
         {formOpen && (
-        <div className="grid grid-cols-1 gap-2.5 border-t border-border/60 px-4 py-3 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="grid grid-cols-1 gap-2.5 border-t border-border/60 px-4 py-3 sm:grid-cols-3 lg:grid-cols-6">
           <label className="block">
             <span className="mb-1 block text-[10px] font-medium text-muted-foreground">Kode saham</span>
             <Input
@@ -177,6 +182,17 @@ export function StockPortfolio() {
               value={lot || ""}
               onChange={(e) => setLot(Number(e.target.value))}
               className="h-8 text-sm"
+            />
+          </label>
+          <label className="block">
+            <span className="mb-1 block text-[10px] font-medium text-muted-foreground">Available lot (opsional)</span>
+            <Input
+              type="number"
+              min={0}
+              value={availableLot || ""}
+              onChange={(e) => setAvailableLot(Number(e.target.value))}
+              className="h-8 text-sm"
+              placeholder="0 = semua"
             />
           </label>
           <label className="block">
@@ -287,7 +303,11 @@ export function StockPortfolio() {
             return (
               <div
                 key={p.id}
-                className="group relative grid grid-cols-[1.2fr_1fr_1fr_1fr] items-center gap-2 border-b border-border/40 px-3 py-2.5 last:border-0 hover:bg-muted/20"
+                onClick={(e) => {
+                  if ((e.target as HTMLElement).closest("button,input")) return;
+                  router.push(`/portfolio/stocks/${p.id}`);
+                }}
+                className="group relative grid cursor-pointer grid-cols-[1.2fr_1fr_1fr_1fr] items-center gap-2 border-b border-border/40 px-3 py-2.5 last:border-0 hover:bg-muted/20"
               >
                 {/* Code / Lot */}
                 <div className="flex items-center gap-2">
@@ -345,7 +365,10 @@ export function StockPortfolio() {
 
                 {/* Hapus (hover) */}
                 <button
-                  onClick={() => setDeleteTarget(p)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setDeleteTarget(p);
+                  }}
                   aria-label={`Hapus ${p.code}`}
                   className="absolute right-2 top-2 rounded p-1 text-muted-foreground/50 opacity-0 transition-opacity hover:text-destructive group-hover:opacity-100"
                 >

@@ -20,6 +20,7 @@ export async function GET() {
     id: r.id,
     code: r.code,
     lot: r.lot,
+    availableLot: r.availableLot,
     shares: r.lot * 100,
     buyPrice: r.buyPrice,
     marketPrice: r.marketPrice ?? 0,
@@ -61,6 +62,7 @@ export async function POST(req: NextRequest) {
       .values({
         code,
         lot: NUM(b.lot),
+        availableLot: NUM(b.availableLot),
         buyPrice: NUM(b.buyPrice),
         marketPrice: NUM(b.marketPrice),
         buyDate: String(b.buyDate || ""),
@@ -76,7 +78,7 @@ export async function POST(req: NextRequest) {
   }
 }
 
-/** PATCH /api/stocks/portfolio — perbarui posisi (harga pasar, lot, dll). */
+/** PATCH /api/stocks/portfolio — perbarui posisi (partial: hanya field yang dikirim). */
 export async function PATCH(req: NextRequest) {
   try {
     const b = await req.json();
@@ -85,16 +87,17 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: "ID tidak valid" }, { status: 400 });
     }
 
+    const sets: Record<string, unknown> = { updatedAt: sql`(datetime('now'))` };
+    if (typeof b.lot === "number") sets.lot = NUM(b.lot);
+    if (typeof b.availableLot === "number") sets.availableLot = NUM(b.availableLot);
+    if (typeof b.buyPrice === "number") sets.buyPrice = NUM(b.buyPrice);
+    if (typeof b.marketPrice === "number") sets.marketPrice = NUM(b.marketPrice);
+    if (typeof b.buyDate === "string") sets.buyDate = b.buyDate;
+    if (typeof b.notes === "string") sets.notes = b.notes.slice(0, 200);
+
     const row = db
       .update(stockPortfolio)
-      .set({
-        lot: NUM(b.lot),
-        buyPrice: NUM(b.buyPrice),
-        marketPrice: NUM(b.marketPrice),
-        buyDate: String(b.buyDate ?? ""),
-        notes: String(b.notes ?? "").slice(0, 200),
-        updatedAt: sql`(datetime('now'))`,
-      })
+      .set(sets)
       .where(eq(stockPortfolio.id, id))
       .returning()
       .get();
