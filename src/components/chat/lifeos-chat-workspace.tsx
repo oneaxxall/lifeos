@@ -975,7 +975,7 @@ export function LifeOSChatWorkspace() {
                   }}
                   placeholder={`Tanya tentang ${featureMeta.label}… (Enter kirim, Shift+Enter baris baru)`}
                   rows={1}
-                  className="max-h-32 min-h-[22px] flex-1 resize-none overflow-x-hidden border-0 bg-transparent p-0 text-sm shadow-none outline-none field-sizing-normal [overflow-wrap:anywhere] placeholder:text-muted-foreground/70 focus-visible:ring-0 focus-visible:ring-offset-0"
+                  className="max-h-32 min-h-[22px] flex-1 resize-none overflow-x-hidden rounded-none border-0 bg-transparent p-0 text-sm shadow-none outline-none dark:bg-transparent focus-visible:border-0 focus-visible:ring-0 focus-visible:ring-offset-0 field-sizing-normal [overflow-wrap:anywhere] placeholder:text-muted-foreground/70"
                 />
               </div>
               <Button
