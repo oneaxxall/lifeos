@@ -68,6 +68,21 @@ export function fetchVideoMeta(url: string): Promise<{ meta: { title: string; ch
 
     void (async () => {
       const cookies = clipperCookieArgs();
+      // Diagnostik cookie untuk pesan error
+      let cookieDiag = "tanpa cookies";
+      const cp = getClipperSetting("cookies_path").trim();
+      if (cp && fs.existsSync(cp)) {
+        try {
+          const lines = fs.readFileSync(cp, "utf8").split("\n").filter((l) => l && !l.startsWith("#"));
+          const hasYt = lines.some((l) => l.includes("youtube.com"));
+          const hasSid = lines.some((l) => l.includes("SID") || l.includes("__Secure-1PSID") || l.includes("LOGIN_INFO"));
+          cookieDiag = `cookies: ${lines.length} baris${hasYt ? "" : " (TIDAK ada baris youtube.com)"}${hasSid ? "" : " (TIDAK ada SID/LOGIN_INFO — cookie mungkin bukan sesi login)"}`;
+        } catch {
+          cookieDiag = "cookies: file tidak terbaca";
+        }
+      } else {
+        cookieDiag = "cookies_path kosong / file tidak ditemukan";
+      }
       // Percobaan 1: client default + cookies (bila ada)
       let r = await tryExtract([...cookies, "--extractor-args", "youtube:player_client=default"]);
       let clientArgs: string[] = ["--extractor-args", "youtube:player_client=default"];
@@ -87,7 +102,7 @@ export function fetchVideoMeta(url: string): Promise<{ meta: { title: string; ch
         clientArgs = ["--extractor-args", "youtube:player_client=web_safari"];
       }
       if (!r.ok || !r.data) {
-        return reject(new Error(`Gagal mengambil metadata (video mungkin tidak tersedia)${r?.err ? ` — ${r.err.slice(0, 160)}` : ""}`));
+        return reject(new Error(`Gagal mengambil metadata (video mungkin tidak tersedia) — ${cookieDiag}${r?.err ? ` | ${r.err.slice(0, 140)}` : ""}`));
       }
       try {
         const j = JSON.parse(r.data);

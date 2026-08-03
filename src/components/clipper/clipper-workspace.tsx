@@ -900,7 +900,11 @@ export function ClipperWorkspace() {
       setCookiesPath(j.path ?? "");
       setCookiesSaved(true);
       setTimeout(() => setCookiesSaved(false), 2500);
-      toast.success(`Cookie tersimpan (${(j.size / 1024).toFixed(1)} KB)`);
+      if (j.valid === false) {
+        toast.error(`Cookie ${j.lines ?? 0} baris — TIDAK valid: ${!j.hasYt ? "tidak ada baris youtube.com" : "tidak ada SID/LOGIN_INFO (bukan sesi login)"}. Export ulang dari browser yang login.`);
+      } else {
+        toast.success(`Cookie tersimpan (${j.lines ?? 0} baris, ${(j.size / 1024).toFixed(1)} KB)`);
+      }
     } catch {
       toast.error("Gagal upload cookie");
     } finally {

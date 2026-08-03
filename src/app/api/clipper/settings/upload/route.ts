@@ -21,6 +21,13 @@ export async function POST(req: NextRequest) {
     fs.mkdirSync(path.dirname(dest), { recursive: true });
     fs.writeFileSync(dest, buf);
 
+    // Validasi isi: format Netscape + baris youtube + indikator sesi login
+    const text = buf.toString("utf8");
+    const lines = text.split("\n").filter((l) => l && !l.startsWith("#"));
+    const hasYt = lines.some((l) => l.includes("youtube.com"));
+    const hasSid = lines.some((l) => l.includes("SID") || l.includes("__Secure-1PSID") || l.includes("LOGIN_INFO"));
+    const valid = hasYt && hasSid;
+
     // Simpan path ke settings
     const existing = db.select().from(clipperSettings).where(eq(clipperSettings.key, "cookies_path")).get();
     if (existing) {
@@ -28,7 +35,7 @@ export async function POST(req: NextRequest) {
     } else {
       db.insert(clipperSettings).values({ key: "cookies_path", value: dest }).run();
     }
-    return NextResponse.json({ ok: true, path: dest, size: buf.length });
+    return NextResponse.json({ ok: true, path: dest, size: buf.length, lines: lines.length, valid, hasYt, hasSid });
   } catch {
     return NextResponse.json({ error: "Gagal menyimpan file cookie" }, { status: 500 });
   }
