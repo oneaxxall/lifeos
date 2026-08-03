@@ -27,19 +27,41 @@ function updateJob(id: number, sets: Partial<typeof clipperJobs.$inferInsert>) {
   db.update(clipperJobs).set({ ...sets, updatedAt: sql`(datetime('now'))` }).where(eq(clipperJobs.id, id)).run();
 }
 
-/** Ambil metadata video via yt-dlp --dump-single-json. */
+/** Ambil metadata video via yt-dlp --dump-single-json. Retry dengan player_client alternatif (IP datacenter sering dibatasi). */
 export function fetchVideoMeta(url: string): Promise<{ title: string; channel: string; duration: number; thumbnail: string; id: string }> {
   return new Promise((resolve, reject) => {
-    const out = spawn("yt-dlp", ["--dump-single-json", "--no-playlist", url]);
-    let buf = "";
-    out.stdout.on("data", (d: Buffer) => (buf += String(d)));
-    out.stderr.on("data", (d: Buffer) => (buf += String(d)));
-    out.on("error", (e) => reject(new Error(`yt-dlp tidak ditemukan: ${e.message}`)));
-    out.on("close", (code) => {
-      if (code !== 0) return reject(new Error("Gagal mengambil metadata (video mungkin tidak tersedia)"));
+    const tryExtract = (extraArgs: string[]): Promise<{ ok: boolean; data?: string; err?: string }> =>
+      new Promise((res) => {
+        const out = spawn("yt-dlp", ["--dump-single-json", "--no-playlist", "-4", ...extraArgs, url]);
+        let buf = "";
+        let errBuf = "";
+        out.stdout.on("data", (d: Buffer) => (buf += String(d)));
+        out.stderr.on("data", (d: Buffer) => (errBuf += String(d)));
+        out.on("error", (e) => res({ ok: false, err: `yt-dlp tidak ditemukan: ${e.message}` }));
+        out.on("close", (code) => {
+          if (code !== 0) return res({ ok: false, err: errBuf.slice(-300) });
+          const start = buf.indexOf("{");
+          if (start < 0) return res({ ok: false, err: "JSON tidak ditemukan" });
+          res({ ok: true, data: buf.slice(start) });
+        });
+      });
+
+    void (async () => {
+      // Percobaan 1: client default
+      let r = await tryExtract([]);
+      // Percobaan 2: multi client (android/tv sering lolos pembatasan IP datacenter)
+      if (!r.ok) {
+        r = await tryExtract(["--extractor-args", "youtube:player_client=default,android,tv"]);
+      }
+      // Percobaan 3: client android saja
+      if (!r.ok) {
+        r = await tryExtract(["--extractor-args", "youtube:player_client=android"]);
+      }
+      if (!r.ok || !r.data) {
+        return reject(new Error(`Gagal mengambil metadata (video mungkin tidak tersedia)${r?.err ? ` — ${r.err.slice(0, 160)}` : ""}`));
+      }
       try {
-        const start = buf.indexOf("{");
-        const j = JSON.parse(buf.slice(start));
+        const j = JSON.parse(r.data);
         resolve({
           title: String(j.title || "Untitled").replace(/[\\/:*?"<>|]/g, "-").slice(0, 120),
           channel: String(j.channel || ""),
@@ -50,7 +72,7 @@ export function fetchVideoMeta(url: string): Promise<{ title: string; channel: s
       } catch {
         reject(new Error("Gagal parse metadata video"));
       }
-    });
+    })();
   });
 }
 
@@ -71,6 +93,8 @@ export async function runDownloadJob(jobId: number, url: string): Promise<void> 
   const child = spawn("yt-dlp", [
     "--newline",
     "--no-playlist",
+    "-4",
+    "--extractor-args", "youtube:player_client=default,android,tv",
     "-f", "bv*+ba/b",
     "--merge-output-format", "mp4",
     "--progress-template", "download:%(progress.downloaded_bytes)s/%(progress.total_bytes)s/%(progress.speed)s/%(progress.eta)s",
