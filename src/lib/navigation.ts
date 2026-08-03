@@ -18,6 +18,7 @@ import {
   MessageSquareText,
   Moon,
   NotebookPen,
+  PieChart,
   Quote,
   Sparkles,
   Stethoscope,
@@ -58,6 +59,7 @@ export const navGroups: NavGroup[] = [
     label: "Keuangan",
     items: [
       { title: "Finance", href: "/finance", icon: Wallet, description: "Keuangan & analisa AI" },
+      { title: "Portofolio", href: "/portfolio", icon: PieChart, description: "Saham, obligasi, reksa dana & emas" },
       { title: "Financial Planning", href: "/financial-planning", icon: Calculator, description: "FIRE, dana sekolah & darurat" },
       { title: "Stocks", href: "/stocks", icon: TrendingUp, description: "Portofolio & kalkulator saham" },
       { title: "Hutang & Piutang", href: "/debts", icon: ArrowLeftRight, description: "Utang-piutang & cicilan" },

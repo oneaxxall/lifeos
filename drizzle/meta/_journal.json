@@ -267,6 +267,13 @@
       "when": 1785685423765,
       "tag": "0037_chat-mode",
       "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "6",
+      "when": 1785734964221,
+      "tag": "0038_portfolio-assets",
+      "breakpoints": true
     }
   ]
 }

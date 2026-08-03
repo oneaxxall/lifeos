@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { integer, primaryKey, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { integer, primaryKey, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 /* ═══════════ Knowledge (Second Brain) ═══════════ */
 
@@ -913,6 +913,73 @@ export const stockPortfolio = sqliteTable("stock_portfolio", {
   /** Tanggal beli */
   buyDate: text("buy_date").default(""),
   /** Catatan */
+  notes: text("notes").default(""),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+  updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
+});
+
+/* ═══════════ Obligasi (bonds) ═══════════ */
+
+export const bonds = sqliteTable("bonds", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  /** Nama obligasi (mis. "Obligasi Negara FR0090") */
+  name: text("name").notNull(),
+  /** Kode seri (mis. FR0090, SBR012) */
+  code: text("code").default(""),
+  /** Jenis: sbn | fr | sukuk | korporasi | lainnya */
+  type: text("type", { enum: ["sbn", "fr", "sukuk", "korporasi", "lainnya"] }).notNull().default("fr"),
+  /** Nilai nominal kepemilikan (Rp) */
+  nominal: integer("nominal").notNull().default(0),
+  /** Harga beli (% dari nominal, 100 = par) */
+  buyPrice: integer("buy_price").default(0),
+  /** Kupon per tahun (%) */
+  couponRate: integer("coupon_rate").default(0),
+  /** Jatuh tempo (YYYY-MM-DD) */
+  maturityDate: text("maturity_date").default(""),
+  status: text("status", { enum: ["aktif", "jatuh_tempo", "dijual"] }).notNull().default("aktif"),
+  notes: text("notes").default(""),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+  updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
+});
+
+/* ═══════════ Reksa Dana (mutual_funds) ═══════════ */
+
+export const mutualFunds = sqliteTable("mutual_funds", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  name: text("name").notNull(),
+  /** Jenis: pasar_uang | pendapatan_tetap | saham | campuran | indeks */
+  type: text("type", { enum: ["pasar_uang", "pendapatan_tetap", "saham", "campuran", "indeks"] }).notNull().default("pasar_uang"),
+  /** Unit penyertaan */
+  units: integer("units").notNull().default(0),
+  /** Harga NAV per unit (Rp) */
+  navPrice: integer("nav_price").notNull().default(0),
+  /** Total modal investasi (Rp) */
+  investedAmount: integer("invested_amount").default(0),
+  status: text("status", { enum: ["aktif", "dijual"] }).notNull().default("aktif"),
+  notes: text("notes").default(""),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+  updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
+});
+
+/* ═══════════ Emas (gold_holdings) ═══════════ */
+
+export const goldHoldings = sqliteTable("gold_holdings", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  /** Nama / jenis (mis. "Antam 24k") */
+  name: text("name").notNull(),
+  /** Berat dalam gram (desimal) */
+  grams: real("grams").notNull().default(0),
+  /** Harga beli per gram (Rp) */
+  buyPricePerGram: integer("buy_price_per_gram").notNull().default(0),
+  /** Harga sekarang per gram (opsional, diisi manual) */
+  currentPricePerGram: integer("current_price_per_gram").default(0),
+  status: text("status", { enum: ["simpan", "dijual"] }).notNull().default("simpan"),
   notes: text("notes").default(""),
   createdAt: text("created_at")
     .notNull()
