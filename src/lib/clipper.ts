@@ -141,7 +141,7 @@ export async function runDownloadJob(jobId: number, url: string): Promise<void> 
   const output = path.join(VIDEO_DIR, `${safeTitle} [${meta.id}].%(ext)s`);
   // Pakai client yang sama dengan metadata (cookies hanya utk client default/web)
   const clientArgs = jobClientArgs.get(jobId) ?? [];
-  const useCookies = clientArgs.includes("default") ? clipperCookieArgs() : [];
+  const useCookies = clientArgs.some((a) => a.includes("default")) ? clipperCookieArgs() : [];
   const child = spawn("yt-dlp", [
     "--newline",
     "--no-playlist",
