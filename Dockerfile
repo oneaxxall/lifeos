@@ -66,7 +66,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 RUN python3 -m venv /opt/lifeos-tools/venv-clipper \
     && /opt/lifeos-tools/venv-clipper/bin/pip install --no-cache-dir \
-       faster-whisper edge-tts yt-dlp yt-dlp-ejs
+       faster-whisper edge-tts yt-dlp yt-dlp-ejs requests "curl_cffi==0.15.0"
 
 ENV CLIPPER_PYTHON=/opt/lifeos-tools/venv-clipper/bin/python
 ENV PATH="/opt/lifeos-tools/venv-clipper/bin:${PATH}"
