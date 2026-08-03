@@ -281,6 +281,104 @@
       "when": 1785735842676,
       "tag": "0039_stock-available-lot",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "6",
+      "when": 1785740120151,
+      "tag": "0040_video-clipper",
+      "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "6",
+      "when": 1785740524914,
+      "tag": "0041_clipper-m34",
+      "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "6",
+      "when": 1785742566016,
+      "tag": "0042_clip-metadata",
+      "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "6",
+      "when": 1785744055792,
+      "tag": "0043_preset-cta-style",
+      "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "6",
+      "when": 1785744390482,
+      "tag": "0044_preset-source",
+      "breakpoints": true
+    },
+    {
+      "idx": 45,
+      "version": "6",
+      "when": 1785744899878,
+      "tag": "0045_preset-cta-border",
+      "breakpoints": true
+    },
+    {
+      "idx": 46,
+      "version": "6",
+      "when": 1785750577105,
+      "tag": "0046_preset-font-bg",
+      "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "6",
+      "when": 1785750659107,
+      "tag": "0047_preset-src-bg",
+      "breakpoints": true
+    },
+    {
+      "idx": 48,
+      "version": "6",
+      "when": 1785750768038,
+      "tag": "0048_preset-caption-mode",
+      "breakpoints": true
+    },
+    {
+      "idx": 49,
+      "version": "6",
+      "when": 1785752232549,
+      "tag": "0049_preset-source-prefix",
+      "breakpoints": true
+    },
+    {
+      "idx": 50,
+      "version": "6",
+      "when": 1785754613690,
+      "tag": "0050_preset-font-default",
+      "breakpoints": true
+    },
+    {
+      "idx": 51,
+      "version": "6",
+      "when": 1785755081663,
+      "tag": "0051_preset-intro-hook",
+      "breakpoints": true
+    },
+    {
+      "idx": 52,
+      "version": "6",
+      "when": 1785756185832,
+      "tag": "0052_preset-intro-video-frame",
+      "breakpoints": true
+    },
+    {
+      "idx": 53,
+      "version": "6",
+      "when": 1785757933211,
+      "tag": "0053_preset-source-size",
+      "breakpoints": true
     }
   ]
 }

@@ -1,6 +1,141 @@
 import { sql } from "drizzle-orm";
 import { integer, primaryKey, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
+/* ═══════════ Video Clipper (jobs & videos) ═══════════ */
+
+export const clipperJobs = sqliteTable("clipper_jobs", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  /** download | transcribe | analyze | clip */
+  type: text("type", { enum: ["download", "transcribe", "analyze", "clip"] }).notNull(),
+  url: text("url").default(""),
+  videoId: integer("video_id").default(0),
+  status: text("status", { enum: ["queued", "running", "done", "failed", "cancelled"] }).notNull().default("queued"),
+  progress: integer("progress").notNull().default(0),
+  message: text("message").default(""),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+  updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
+});
+
+export const clipperVideos = sqliteTable("clipper_videos", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  title: text("title").notNull(),
+  channel: text("channel").default(""),
+  url: text("url").default(""),
+  filePath: text("file_path").notNull(),
+  durationSec: integer("duration_sec").default(0),
+  sizeBytes: integer("size_bytes").default(0),
+  thumbnail: text("thumbnail").default(""),
+  status: text("status", { enum: ["downloaded", "transcribed", "analyzed"] }).notNull().default("downloaded"),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+});
+
+/* ═══════════ Video Clipper — transkrip, analisa, preset & clip ═══════════ */
+
+export const clipperTranscripts = sqliteTable("clipper_transcripts", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  videoId: integer("video_id").notNull(),
+  lang: text("lang").default(""),
+  text: text("text").notNull(),
+  /** JSON array segmen: [{start, end, text}] */
+  segmentsJson: text("segments_json").notNull(),
+  model: text("model").default(""),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+});
+
+export const clipperAnalyses = sqliteTable("clipper_analyses", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  videoId: integer("video_id").notNull(),
+  summary: text("summary").default(""),
+  /** JSON array kandidat: [{start, end, hook_line, reason, score, emotion}] */
+  candidatesJson: text("candidates_json").notNull(),
+  model: text("model").default(""),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+});
+
+export const clipperPresets = sqliteTable("clipper_presets", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  name: text("name").notNull(),
+  /** 9:16 | 1:1 | original */
+  ratio: text("ratio", { enum: ["9:16", "1:1", "original"] }).notNull().default("9:16"),
+  /** Posisi teks transkrip: top | center | bottom */
+  captionPosition: text("caption_position", { enum: ["top", "center", "bottom"] }).notNull().default("bottom"),
+  captionSize: integer("caption_size").notNull().default(28),
+  captionColor: text("caption_color").notNull().default("white"),
+  captionBg: text("caption_bg").notNull().default("black@0.4"),
+  ctaText: text("cta_text").default(""),
+  ctaPosition: text("cta_position", { enum: ["top", "center", "bottom"] }).notNull().default("bottom"),
+  /** Warna CTA (hex) & ukuran */
+  ctaColor: text("cta_color").notNull().default("#FFD400"),
+  ctaSize: integer("cta_size").notNull().default(32),
+  /** Border CTA */
+  ctaBorderSize: integer("cta_border_size").notNull().default(0),
+  ctaBorderColor: text("cta_border_color").notNull().default("#000000"),
+  /** Cantumkan sumber video (channel + URL) */
+  showSource: integer("show_source").notNull().default(0),
+  sourcePosition: text("source_position", { enum: ["top", "bottom"] }).notNull().default("bottom"),
+  /** Tampilkan URL di sumber (0 = channel saja) */
+  sourceShowUrl: integer("source_show_url").notNull().default(1),
+  /** Teks kustom sebelum channel (mis. "Sumber YouTube :") — kosong = tanpa prefix */
+  sourcePrefix: text("source_prefix").notNull().default("Sumber YouTube :"),
+  /** Background teks sumber ("transparent" = tanpa bg) */
+  srcBg: text("src_bg").notNull().default("black@0.55"),
+  /** Ukuran teks sumber (px @720) */
+  sourceSize: integer("source_size").notNull().default(16),
+  /** Font semua teks: Arial | Inter | Plus Jakarta Sans | Anton | Georgia | Courier | Impact (Inter = bundled) */
+  fontFamily: text("font_family").notNull().default("Inter"),
+  /** Mode teks transkrip: sentence (perkalimat) | word (perkata) | off */
+  captionMode: text("caption_mode", { enum: ["sentence", "word", "off"] }).notNull().default("sentence"),
+  /** Background CTA ("transparent" = tanpa bg, atau "warna@opacity") */
+  ctaBg: text("cta_bg").notNull().default("black@0.5"),
+  /** Voice-over hook AI di awal clip (edge-tts) */
+  hookVoice: integer("hook_voice").notNull().default(0),
+  hookVoiceName: text("hook_voice_name").notNull().default("id-ID-GadisNeural"),
+  /** Thumbnail intro di awal clip */
+  showIntro: integer("show_intro").notNull().default(0),
+  introDuration: integer("intro_duration").notNull().default(2),
+  introBg: text("intro_bg").notNull().default("#0D9488"),
+  /** Intro pakai frame video sebagai background (0 = warna solid) */
+  introUseVideo: integer("intro_use_video").notNull().default(1),
+  /** Warna border card hook intro */
+  introBorderColor: text("intro_border_color").notNull().default("#3B82F6"),
+  watermark: text("watermark").default(""),
+  isDefault: integer("is_default").notNull().default(0),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+});
+
+export const clipperClips = sqliteTable("clipper_clips", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  videoId: integer("video_id").notNull(),
+  presetId: integer("preset_id").default(0),
+  startSec: integer("start_sec").notNull(),
+  endSec: integer("end_sec").notNull(),
+  /** 360 | 480 | 720 | 1080 */
+  quality: integer("quality").notNull().default(720),
+  filePath: text("file_path").notNull(),
+  sizeBytes: integer("size_bytes").default(0),
+  status: text("status", { enum: ["done", "failed"] }).notNull().default("done"),
+  /** Metadata posting (dari kandidat analisa) */
+  title: text("title").default(""),
+  hookLine: text("hook_line").default(""),
+  tags: text("tags").default(""),
+  score: integer("score").default(0),
+  emotion: text("emotion").default(""),
+  reason: text("reason").default(""),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+});
+
 /* ═══════════ Knowledge (Second Brain) ═══════════ */
 
 export const knowledge = sqliteTable("knowledge", {

@@ -1,0 +1,1 @@
+ALTER TABLE `clipper_presets` ADD `caption_mode` text DEFAULT 'sentence' NOT NULL;

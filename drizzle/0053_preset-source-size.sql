@@ -1,0 +1,1 @@
+ALTER TABLE `clipper_presets` ADD `source_size` integer DEFAULT 16 NOT NULL;

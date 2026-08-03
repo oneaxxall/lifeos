@@ -1,0 +1,1 @@
+ALTER TABLE `clipper_presets` ADD `source_prefix` text DEFAULT 'Sumber YouTube :' NOT NULL;

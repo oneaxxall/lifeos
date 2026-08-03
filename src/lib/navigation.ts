@@ -28,6 +28,7 @@ import {
   Users,
   UsersRound,
   Utensils,
+  Video,
   Wallet,
   type LucideIcon,
 } from "lucide-react";
@@ -101,6 +102,7 @@ export const navGroups: NavGroup[] = [
     label: "Karya",
     items: [
       { title: "Carousel", href: "/carousel", icon: Images, description: "Generator carousel Instagram AI" },
+      { title: "Video Clipper", href: "/clipper", icon: Video, description: "YouTube → transkrip → clip viral" },
       { title: "Content", href: "/content", icon: Clapperboard, description: "TikTok affiliate: ide, naskah & tracker" },
     ],
   },

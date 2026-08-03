@@ -1,0 +1,1 @@
+ALTER TABLE `clipper_presets` ADD `src_bg` text DEFAULT 'black@0.55' NOT NULL;

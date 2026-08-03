@@ -43,6 +43,28 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 # Folder migrasi SQL — dibutuhkan migrate() saat server start
 COPY --from=builder --chown=nextjs:nodejs /app/drizzle ./drizzle
+# Script Python clipper (transcribe.py, tts.py) — dipanggil dari lib/clipper.ts
+COPY --from=builder --chown=nextjs:nodejs /app/scripts ./scripts
+
+# Font untuk render teks clip (librsvg/sharp via fontconfig) — Inter, Jakarta Sans, Anton
+RUN apt-get update && apt-get install -y --no-install-recommends fontconfig \
+    && rm -rf /var/lib/apt/lists/*
+RUN mkdir -p /usr/local/share/fonts/lifeos \
+    && cp /app/public/fonts/*.ttf /usr/local/share/fonts/lifeos/ \
+    && fc-cache -f /usr/local/share/fonts/lifeos > /dev/null 2>&1
+
+# ── Video Clipper: ffmpeg + Python venv (faster-whisper, edge-tts, yt-dlp) ──
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ffmpeg python3 python3-venv python3-pip \
+    && rm -rf /var/lib/apt/lists/*
+RUN python3 -m venv /opt/lifeos-tools/venv-clipper \
+    && /opt/lifeos-tools/venv-clipper/bin/pip install --no-cache-dir \
+       faster-whisper edge-tts yt-dlp
+
+ENV CLIPPER_PYTHON=/opt/lifeos-tools/venv-clipper/bin/python
+ENV PATH="/opt/lifeos-tools/venv-clipper/bin:${PATH}"
+# Folder data (video & clip) — volume persisten dari docker-compose
+RUN mkdir -p /app/data/videos /app/data/clips && chown -R nextjs:nodejs /app/data
 
 USER nextjs
 
