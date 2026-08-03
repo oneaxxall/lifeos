@@ -75,4 +75,5 @@ USER nextjs
 
 EXPOSE 3000
 
-CMD ["node", "server.js"]
+# Update yt-dlp tiap start (YouTube sering ubah API; versi lama → "No video formats found")
+CMD ["sh", "-c", "/opt/lifeos-tools/venv-clipper/bin/pip install -q -U yt-dlp && node server.js"]
